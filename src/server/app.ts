@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { requireActor, requireRole, requireSession } from './auth'
+import type { AppConfig } from './config'
 import type { DatabaseClient } from './db'
 import { DomainError } from './domain/errors'
 import { createAuthRoutes } from './routes/auth'
@@ -8,11 +9,21 @@ import { createExpenseRoutes } from './routes/expenses'
 import { createProductRoutes } from './routes/products'
 import { createSalesRoutes } from './routes/sales'
 import { createSettingsRoutes } from './routes/settings'
+import { createTelegramRoutes } from './routes/telegram'
+import { createTelegramClient, type TelegramClient } from './telegram/client'
+import type { TelegramDispatcher } from './telegram/conversations'
 
-export type AppOptions = { db: DatabaseClient; sessionSecret: string }
+export type AppOptions = { db: DatabaseClient; sessionSecret: string; telegramClient?: TelegramClient; telegramDispatcher?: TelegramDispatcher }
+  & Partial<Pick<AppConfig, 'telegramEnabled' | 'telegramBotToken' | 'telegramWebhookSecret'>>
 
-export function createApp({ db, sessionSecret }: AppOptions) {
+export function createApp({ db, sessionSecret, telegramEnabled, telegramBotToken, telegramWebhookSecret, telegramClient, telegramDispatcher }: AppOptions) {
   const app = new Hono()
+
+  if (telegramEnabled) {
+    if (!telegramWebhookSecret?.trim() || (!telegramClient && !telegramBotToken?.trim())) throw new Error('Telegram credentials are required')
+    app.route('/telegram', createTelegramRoutes({ db, webhookSecret: telegramWebhookSecret,
+      client: telegramClient ?? createTelegramClient(telegramBotToken!), dispatch: telegramDispatcher }))
+  }
 
   app.route('/api/auth', createAuthRoutes({ db, sessionSecret }))
   app.use('/api/*', requireSession(db, sessionSecret))
