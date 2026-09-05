@@ -60,17 +60,21 @@ export async function createBootstrapAdmin(
   const name = input.name.trim()
   const email = input.email.trim()
   if (!name || !email || !input.password) throw new DomainError('INVALID_BOOTSTRAP_ADMIN', 'Name, email, and password are required')
-  if (db.select({ id: users.id }).from(users).limit(1).get()) {
-    throw new DomainError('BOOTSTRAP_CLOSED', 'An administrator already exists')
-  }
+  const passwordHash = await hashPassword(input.password)
 
-  const admin = db.insert(users).values({
-    name,
-    email,
-    passwordHash: await hashPassword(input.password),
-    role: 'admin',
-  }).returning({ id: users.id, name: users.name, email: users.email, role: users.role }).get()
+  return db.transaction((tx) => {
+    if (tx.select({ id: users.id }).from(users).limit(1).get()) {
+      throw new DomainError('BOOTSTRAP_CLOSED', 'An administrator already exists')
+    }
 
-  if (!admin) throw new DomainError('BOOTSTRAP_FAILED', 'Could not create administrator')
-  return admin
+    const admin = tx.insert(users).values({
+      name,
+      email,
+      passwordHash,
+      role: 'admin',
+    }).returning({ id: users.id, name: users.name, email: users.email, role: users.role }).get()
+
+    if (!admin) throw new DomainError('BOOTSTRAP_FAILED', 'Could not create administrator')
+    return admin
+  }, { behavior: 'immediate' })
 }
