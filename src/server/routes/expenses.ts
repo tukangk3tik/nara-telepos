@@ -5,6 +5,7 @@ import type { DatabaseClient } from '../db'
 import { expenseCategories, expenses } from '../db/schema'
 import { DomainError } from '../domain/errors'
 import type { ExpenseInput } from '../domain/types'
+import { listExpenseCategories } from '../services/catalog'
 import { createExpense } from '../services/expenses'
 
 const expenseId = (value: string) => {
@@ -47,6 +48,8 @@ export function createExpenseRoutes({ db }: { db: DatabaseClient }) {
       .where(actor.role === 'admin' ? undefined : eq(expenses.createdByUserId, actor.id))
       .orderBy(desc(expenses.createdAt)).all())
   })
+
+  app.get('/categories', (c) => c.json(listExpenseCategories(db, true)))
 
   app.get('/:id', (c) => {
     const actor = requireActor(c)

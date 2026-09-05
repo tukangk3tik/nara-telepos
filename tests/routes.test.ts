@@ -156,6 +156,22 @@ test('expense route creates a web expense', async () => {
   expect(await response.json()).toMatchObject({ amount: 25000, categoryName: 'Transport', transactionDate: '2026-09-05' })
 })
 
+test('cashier can list only active expense categories', async () => {
+  const { adminRequest, cashierRequest, category } = await setup()
+  const created = await adminRequest('/api/settings/expense-categories', {
+    method: 'POST', body: JSON.stringify({ name: 'Legacy' }),
+  })
+  const inactive = await created.json() as { id: number }
+  await adminRequest(`/api/settings/expense-categories/${inactive.id}`, {
+    method: 'PUT', body: JSON.stringify({ isActive: false }),
+  })
+
+  const response = await cashierRequest('/api/expenses/categories')
+
+  expect(response.status).toBe(200)
+  expect(await response.json()).toEqual([expect.objectContaining({ id: category.id, name: 'Transport', isActive: true })])
+})
+
 test('expense route rejects an impossible transaction date', async () => {
   const { cashierRequest, category } = await setup()
 

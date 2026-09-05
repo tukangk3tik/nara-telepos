@@ -64,7 +64,7 @@
     {#if path === '/sales'}
       <Sales {actor} />
     {:else if path === '/expenses'}
-      <Expenses {actor} />
+      <Expenses />
     {:else if path === '/settings' && actor.role === 'admin'}
       <Settings />
     {:else}
