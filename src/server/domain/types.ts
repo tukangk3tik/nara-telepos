@@ -14,3 +14,11 @@ export type ExpenseInput = {
   notes?: string
   source: 'web' | 'telegram'
 }
+
+export type ExpenseReceipt = {
+  id: number
+  expenseNumber: string
+  amount: number
+  categoryName: string
+  transactionDate: string
+}
