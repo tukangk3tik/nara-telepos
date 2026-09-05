@@ -4,6 +4,7 @@ import { telegramConversations } from '../db/schema'
 import type { Actor } from '../domain/types'
 import type { TelegramClient } from './client'
 import { object, type TelegramAction } from './update'
+import { handleTelegramSale } from './sale-flow'
 
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }
 export type Conversation = {
@@ -72,7 +73,13 @@ export function saveConversation(
     .onConflictDoUpdate({ target: telegramConversations.telegramUserId, set: values }).run()
 }
 
-// Tasks 9–10 extend this dispatcher with sale and expense states.
-export const dispatchConversation: TelegramDispatcher = async ({ client, chatId }) => {
-  await client.sendMessage(chatId, 'Start or restart with /sale or /expense.')
+// Task 10 extends this dispatcher with expense states.
+export const dispatchConversation: TelegramDispatcher = async (context) => {
+  const { action, conversation } = context
+  if ((action.type === 'text' && (action.text.trim() === '/sale' || action.text.trim() === '/cancel'))
+    || (action.type === 'callback' && action.data.startsWith('sale:')) || conversation?.state.startsWith('sale.')) {
+    await handleTelegramSale(context)
+    return
+  }
+  await context.client.sendMessage(context.chatId, 'Start or restart with /sale or /expense.')
 }
