@@ -5,6 +5,7 @@ import type { Actor } from '../domain/types'
 import type { TelegramClient } from './client'
 import { object, type TelegramAction } from './update'
 import { handleTelegramSale } from './sale-flow'
+import { handleTelegramExpense } from './expense-flow'
 
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }
 export type Conversation = {
@@ -73,13 +74,15 @@ export function saveConversation(
     .onConflictDoUpdate({ target: telegramConversations.telegramUserId, set: values }).run()
 }
 
-// Task 10 extends this dispatcher with expense states.
 export const dispatchConversation: TelegramDispatcher = async (context) => {
   const { action, conversation } = context
-  if ((action.type === 'text' && (action.text.trim() === '/sale' || action.text.trim() === '/cancel'))
-    || (action.type === 'callback' && action.data.startsWith('sale:')) || conversation?.state.startsWith('sale.')) {
-    await handleTelegramSale(context)
-    return
-  }
+  if (conversation?.state === 'sale.committing') return handleTelegramSale(context)
+  if (conversation?.state === 'expense.committing') return handleTelegramExpense(context)
+  if (action.type === 'text' && action.text.trim() === '/sale') return handleTelegramSale(context)
+  if (action.type === 'text' && action.text.trim() === '/expense') return handleTelegramExpense(context)
+  if (action.type === 'callback' && action.data.startsWith('sale:')) return handleTelegramSale(context)
+  if (action.type === 'callback' && action.data.startsWith('expense:')) return handleTelegramExpense(context)
+  if (conversation?.state.startsWith('expense.')) return handleTelegramExpense(context)
+  if (conversation?.state.startsWith('sale.') || (action.type === 'text' && action.text.trim() === '/cancel')) return handleTelegramSale(context)
   await context.client.sendMessage(context.chatId, 'Start or restart with /sale or /expense.')
 }
