@@ -129,6 +129,31 @@ test('a product removed after review keeps the failed draft cancellable', async 
   expect(t.draft()).toBeUndefined()
 })
 
+test('stock failure followed by a missing review product restores a draft that /cancel can discard', async () => {
+  const t = setup()
+  const tea = t.db.insert(products).values({ name: 'Tea', sku: 'TEA-1', salePrice: 10000, stockQuantity: 5 }).returning().get()!
+  await t.send('/sale')
+  await t.tap('sale:customer:none')
+  await t.send('coffee')
+  await t.tap(`sale:product:${t.product.id}`)
+  await t.send('2')
+  await t.tap('sale:items:more')
+  await t.send('tea')
+  await t.tap(`sale:product:${tea.id}`)
+  await t.send('1')
+  await t.tap('sale:items:done')
+  await t.tap('sale:payment:cash')
+  t.db.update(products).set({ stockQuantity: 1 }).where(eq(products.id, t.product.id)).run()
+  t.db.delete(products).where(eq(products.id, tea.id)).run()
+  await t.tap('sale:confirm')
+  expect(t.draft()?.state).toBe('sale.confirm')
+  expect(t.db.select().from(sales).all()).toHaveLength(0)
+  expect(t.db.select().from(saleItems).all()).toHaveLength(0)
+  expect(t.db.select().from(stockMovements).all()).toHaveLength(0)
+  await t.send('/cancel')
+  expect(t.draft()).toBeUndefined()
+})
+
 test('cancel and replacement discard only the draft and stale buttons cannot change its replacement', async () => {
   const t = setup()
   await t.review()

@@ -171,6 +171,9 @@ export async function handleTelegramSale(context: TelegramContext, actor: Actor 
           `Total: ${receipt.totalAmount}`, `Payment: ${receipt.paymentMethod}`].join('\n'))
       } catch (error) {
         if (!(error instanceof DomainError)) throw error
+        // Validation rolled back the sale; release the claim before rebuilding a fallible review.
+        db.update(telegramConversations).set({ state: 'sale.confirm' })
+          .where(and(sameDraft, eq(telegramConversations.state, 'sale.committing'))).run()
         if (error.code === 'PRODUCT_NOT_FOUND') await prompt('sale.confirm', `${error.message}. Cancel and restart with /sale.`)
         else await review(error.message)
       }
