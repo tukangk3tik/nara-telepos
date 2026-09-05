@@ -10,7 +10,11 @@ type ExpenseDraft = { nonce: string; categoryId: number | null; choices: number[
 type Button = [text: string, action: string]
 const positiveInteger = (value: unknown): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value > 0
 const label = (text: string) => text.replace(/[\r\n]/g, ' ').slice(0, 100)
-export const serverLocalDate = (now = new Date()) => `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+export const serverLocalDate = (now = new Date(), timeZone?: string) => {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now)
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((value) => value.type === type)?.value
+  return `${part('year')}-${part('month')}-${part('day')}`
+}
 
 function readDraft(value: Record<string, unknown>): ExpenseDraft | null {
   if (typeof value.nonce !== 'string' || !/^[a-f0-9]{16}$/.test(value.nonce)

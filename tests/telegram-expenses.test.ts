@@ -10,8 +10,10 @@ const databases: ReturnType<typeof createTestDatabase>[] = []
 afterEach(() => { for (const db of databases.splice(0)) db.$client.close() })
 
 test('server-local date keeps Jakarta midnight expense on the new calendar day', () => {
-  expect(serverLocalDate(new Date('2026-09-04T17:30:00.000Z'))).toBe('2026-09-05')
+  expect(serverLocalDate(new Date('2026-09-04T17:30:00.000Z'), 'Asia/Jakarta')).toBe('2026-09-05')
 })
+
+const localDate = (now = new Date()) => `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 
 function setup() {
   const db = createTestDatabase()
@@ -50,7 +52,7 @@ function setup() {
 test('confirmed Telegram expense records one expense without stock movement, only after review', async () => {
   const t = setup()
   await t.review()
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localDate()
   expect(t.db.select().from(expenses).all()).toHaveLength(0)
   expect(t.sent.at(-1)?.text).toContain('Supplies')
   expect(t.sent.at(-1)?.text).toContain('25000')
