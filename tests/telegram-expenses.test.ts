@@ -3,10 +3,15 @@ import { eq } from 'drizzle-orm'
 import { createApp } from '../src/server/app'
 import { expenseCategories, expenses, products, sales, stockMovements, telegramConversations, telegramStaff, users } from '../src/server/db/schema'
 import type { InlineKeyboardMarkup } from '../src/server/telegram/client'
+import { serverLocalDate } from '../src/server/telegram/expense-flow'
 import { createTestDatabase } from './helpers/database'
 
 const databases: ReturnType<typeof createTestDatabase>[] = []
 afterEach(() => { for (const db of databases.splice(0)) db.$client.close() })
+
+test('server-local date keeps Jakarta midnight expense on the new calendar day', () => {
+  expect(serverLocalDate(new Date('2026-09-04T17:30:00.000Z'))).toBe('2026-09-05')
+})
 
 function setup() {
   const db = createTestDatabase()

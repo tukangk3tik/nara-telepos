@@ -10,7 +10,7 @@ type ExpenseDraft = { nonce: string; categoryId: number | null; choices: number[
 type Button = [text: string, action: string]
 const positiveInteger = (value: unknown): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value > 0
 const label = (text: string) => text.replace(/[\r\n]/g, ' ').slice(0, 100)
-const today = () => new Date().toISOString().slice(0, 10)
+export const serverLocalDate = (now = new Date()) => `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 
 function readDraft(value: Record<string, unknown>): ExpenseDraft | null {
   if (typeof value.nonce !== 'string' || !/^[a-f0-9]{16}$/.test(value.nonce)
@@ -38,7 +38,7 @@ export async function handleTelegramExpense(context: TelegramContext, actor: Act
   const review = () => {
     const category = listExpenseCategories(db).find((category) => category.id === draft!.categoryId)
     return prompt('expense.confirm', ['Review expense', `Category: ${label(category?.name ?? 'Unavailable')}`,
-      `Amount: IDR ${draft!.amount}`, `Notes: ${draft!.notes || '(none)'}`, `Date: ${today()} (server date at confirmation)`,
+      `Amount: IDR ${draft!.amount}`, `Notes: ${draft!.notes || '(none)'}`, `Date: ${serverLocalDate()} (server date at confirmation)`,
       'Confirm to record this expense.'].join('\n'), [['Confirm', 'expense:confirm']])
   }
 
@@ -102,7 +102,7 @@ export async function handleTelegramExpense(context: TelegramContext, actor: Act
     try {
       // Durable claim prevents duplicate expenses after concurrent updates or interrupted delivery.
       const receipt = await createExpense(db, { expenseCategoryId: draft.categoryId, amount: draft.amount,
-        transactionDate: today(), notes: draft.notes, source: 'telegram' }, actor)
+        transactionDate: serverLocalDate(), notes: draft.notes, source: 'telegram' }, actor)
       db.delete(telegramConversations).where(and(sameDraft, eq(telegramConversations.state, 'expense.committing'))).run()
       await send([receipt.expenseNumber, `Category: ${label(receipt.categoryName)}`, `Amount: IDR ${receipt.amount}`, `Date: ${receipt.transactionDate}`].join('\n'))
     } catch (error) {
