@@ -156,6 +156,18 @@ test('expense route creates a web expense', async () => {
   expect(await response.json()).toMatchObject({ amount: 25000, categoryName: 'Transport', transactionDate: '2026-09-05' })
 })
 
+test('expense route rejects an impossible transaction date', async () => {
+  const { cashierRequest, category } = await setup()
+
+  const response = await cashierRequest('/api/expenses', {
+    method: 'POST',
+    body: JSON.stringify({ expenseCategoryId: category.id, amount: 25000, transactionDate: '2026-13-01' }),
+  })
+
+  expect(response.status).toBe(400)
+  expect(await response.json()).toEqual({ error: 'INVALID_INPUT' })
+})
+
 test('cashier expense history excludes another cashier records', async () => {
   const { cashierRequest, otherCashierRequest, category } = await setup()
   const own = await cashierRequest('/api/expenses', {

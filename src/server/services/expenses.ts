@@ -19,7 +19,8 @@ function validateExpenseInput(input: ExpenseInput) {
     || (input.source !== 'web' && input.source !== 'telegram')) invalid('Invalid expense')
 
   const transactionDate = typeof input.transactionDate === 'string' ? input.transactionDate : ''
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(transactionDate) || new Date(`${transactionDate}T00:00:00.000Z`).toISOString().slice(0, 10) !== transactionDate) {
+  const date = new Date(`${transactionDate}T00:00:00.000Z`)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(transactionDate) || Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== transactionDate) {
     invalid('Invalid transaction date')
   }
   const notes = input.notes === undefined ? null : typeof input.notes === 'string' ? input.notes.trim() : invalid('Invalid notes')
