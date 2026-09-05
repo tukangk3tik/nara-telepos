@@ -18,5 +18,7 @@ test('serves the SPA fallback and health endpoint without swallowing API 404s', 
   expect((await app.request('/health')).status).toBe(200)
   expect((await app.request('/pos')).status).toBe(200)
   expect((await app.request('/pos')).headers.get('content-type')).toContain('text/html')
+  expect((await app.request('/sales/1')).headers.get('content-type')).toContain('text/html')
+  expect((await app.request('/api/sales/1')).status).toBe(401)
   expect((await app.request('/api/missing', { headers: { cookie: login.headers.get('set-cookie')! } })).status).toBe(404)
 })

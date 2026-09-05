@@ -20,6 +20,7 @@ if (import.meta.main) {
   const app = createServerApp(createApp({
     db: createDatabase(config.databaseUrl),
     sessionSecret: config.sessionSecret,
+    appBaseUrl: config.appBaseUrl,
     telegramEnabled: config.telegramEnabled,
     telegramBotToken: config.telegramBotToken,
     telegramWebhookSecret: config.telegramWebhookSecret,

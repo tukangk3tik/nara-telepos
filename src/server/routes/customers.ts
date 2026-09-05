@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { requireActor } from '../auth'
+import { requireActor, requireRole } from '../auth'
 import type { DatabaseClient } from '../db'
 import { createCustomer, findCustomers, updateCustomer } from '../services/catalog'
 
@@ -8,7 +8,7 @@ export function createCustomerRoutes({ db }: { db: DatabaseClient }) {
 
   app.get('/', (c) => c.json(findCustomers(db, c.req.query('q') ?? '')))
   app.post('/', async (c) => c.json(createCustomer(db, await c.req.json().catch(() => ({})), requireActor(c)), 201))
-  app.put('/:id', async (c) => c.json(updateCustomer(db, Number(c.req.param('id')), await c.req.json().catch(() => ({})), requireActor(c))))
+  app.put('/:id', requireRole('admin'), async (c) => c.json(updateCustomer(db, Number(c.req.param('id')), await c.req.json().catch(() => ({})), requireActor(c))))
 
   return app
 }

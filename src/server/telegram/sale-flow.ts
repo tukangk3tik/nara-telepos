@@ -168,7 +168,7 @@ export async function handleTelegramSale(context: TelegramContext, actor: Actor 
           ...(draft.customerId === null ? {} : { customerId: draft.customerId }), items: draft.items }, actor)
         db.delete(telegramConversations).where(and(sameDraft, eq(telegramConversations.state, 'sale.committing'))).run()
         await send([receipt.invoiceNumber, ...receipt.lines.map((line) => `${label(line.productName)}: ${line.quantity} × ${line.unitPrice} = ${line.lineTotal}`),
-          `Total: ${receipt.totalAmount}`, `Payment: ${receipt.paymentMethod}`].join('\n'))
+          `Total: ${receipt.totalAmount}`, `Payment: ${receipt.paymentMethod}`, new URL(`/sales/${receipt.id}`, context.appBaseUrl).href].join('\n'))
       } catch (error) {
         if (!(error instanceof DomainError)) throw error
         // Validation rolled back the sale; release the claim before rebuilding a fallible review.

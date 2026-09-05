@@ -11,7 +11,7 @@ export function createProductRoutes({ db }: { db: DatabaseClient }) {
   app.put('/:id', requireRole('admin'), async (c) => c.json(updateProduct(db, Number(c.req.param('id')), await c.req.json().catch(() => ({})))))
   app.post('/:id/stock-adjustments', requireRole('admin'), async (c) => {
     const body = await c.req.json().catch(() => ({}))
-    return c.json(adjustStock(db, Number(c.req.param('id')), body.quantityDelta, requireActor(c)))
+    return c.json(adjustStock(db, Number(c.req.param('id')), body.quantityDelta, body.reason, requireActor(c)))
   })
 
   return app

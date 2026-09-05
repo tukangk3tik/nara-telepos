@@ -54,22 +54,26 @@ export function updateProduct(db: DatabaseClient, id: number, input: Partial<Pro
   }).where(eq(products.id, id)).returning().get()
 }
 
-export function adjustStock(db: DatabaseClient, productId: number, quantityDelta: unknown, actor: Actor) {
+export function adjustStock(db: DatabaseClient, productId: number, quantityDelta: unknown, reason: unknown, actor: Actor) {
   positiveId(productId)
   if (actor.role !== 'admin') throw new DomainError('FORBIDDEN', 'Administrator access required')
   const delta = integer(quantityDelta)
   if (!delta) invalid('Stock adjustment must not be zero')
+  const explanation = text(reason)
+  if (!explanation) invalid('Stock adjustment reason is required')
 
   return db.transaction((tx) => {
     const product = tx.select().from(products).where(eq(products.id, productId)).get()
     if (!product) throw new DomainError('PRODUCT_NOT_FOUND', 'Product not found')
     const stockQuantity = product.stockQuantity + delta
+    if (!Number.isSafeInteger(stockQuantity)) invalid('Stock quantity is too large')
     if (stockQuantity < 0) invalid('Stock cannot be negative')
     const updated = tx.update(products).set({ stockQuantity, updatedAt: timestamp }).where(eq(products.id, productId)).returning().get()
     tx.insert(stockMovements).values({
       productId,
       quantityDelta: delta,
       reason: 'adjustment',
+      explanation,
       referenceType: 'product',
       referenceId: productId,
       createdByUserId: actor.id,
@@ -90,7 +94,8 @@ export function findCustomers(db: DatabaseClient, query = '') {
   return db.select().from(customers).where(where).orderBy(asc(customers.name)).all()
 }
 
-export function updateCustomer(db: DatabaseClient, id: number, input: CustomerInput, _actor: Actor) {
+export function updateCustomer(db: DatabaseClient, id: number, input: CustomerInput, actor: Actor) {
+  if (actor.role !== 'admin') throw new DomainError('FORBIDDEN', 'Administrator access required')
   positiveId(id)
   const name = text(input.name)
   if (!name) invalid('Customer name is required')

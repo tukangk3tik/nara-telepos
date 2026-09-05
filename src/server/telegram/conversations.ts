@@ -19,6 +19,7 @@ export type Conversation = {
 
 export type TelegramContext = {
   db: DatabaseClient
+  appBaseUrl: string
   client: TelegramClient
   actor: Actor
   telegramUserId: string

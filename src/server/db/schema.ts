@@ -70,6 +70,7 @@ export const stockMovements = sqliteTable('stock_movements', {
   productId: integer('product_id').notNull().references(() => products.id),
   quantityDelta: integer('quantity_delta').notNull(),
   reason: text('reason', { enum: ['sale', 'sale_cancellation', 'adjustment'] }).notNull(),
+  explanation: text('explanation'),
   referenceType: text('reference_type').notNull(),
   referenceId: integer('reference_id').notNull(),
   createdByUserId: integer('created_by_user_id').notNull().references(() => users.id),

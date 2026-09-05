@@ -51,8 +51,11 @@
   async function adjustStock(product: Product) {
     const quantityDelta = Number(prompt(`Adjust stock for ${product.name} (use a negative number to reduce):`))
     if (!quantityDelta) return
+    const reason = prompt('Stock adjustment reason:')
+    if (reason === null) return
+    if (!reason.trim()) { error = 'Stock adjustment reason is required'; return }
     try {
-      await api<Product>(`/api/products/${product.id}/stock-adjustments`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ quantityDelta }) })
+      await api<Product>(`/api/products/${product.id}/stock-adjustments`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ quantityDelta, reason }) })
       message = 'Stock adjusted'; await load()
     } catch (cause) { error = cause instanceof Error ? cause.message : 'Could not adjust stock' }
   }

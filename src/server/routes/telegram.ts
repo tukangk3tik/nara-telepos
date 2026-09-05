@@ -5,8 +5,9 @@ import type { TelegramClient } from '../telegram/client'
 import { dispatchConversation, loadConversation, type TelegramDispatcher } from '../telegram/conversations'
 import { claimUpdate, markUpdateProcessed, object, readTelegramMessage } from '../telegram/update'
 
-export function createTelegramRoutes({ db, webhookSecret, client, dispatch = dispatchConversation }: {
+export function createTelegramRoutes({ db, appBaseUrl, webhookSecret, client, dispatch = dispatchConversation }: {
   db: DatabaseClient
+  appBaseUrl: string
   webhookSecret: string
   client: TelegramClient
   dispatch?: TelegramDispatcher
@@ -40,7 +41,7 @@ export function createTelegramRoutes({ db, webhookSecret, client, dispatch = dis
         } else {
           const conversation = loadConversation(db, telegramUserId)
           if (!action) await safeClient.sendMessage(chatId, 'Send text or use a current button. Restart with /sale or /expense if needed.')
-          else await dispatch({ db, client: safeClient, actor, telegramUserId, chatId, action, conversation })
+          else await dispatch({ db, appBaseUrl, client: safeClient, actor, telegramUserId, chatId, action, conversation })
         }
       }
     }

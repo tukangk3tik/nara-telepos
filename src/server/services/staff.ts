@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, ne } from 'drizzle-orm'
 import { hashPassword } from '../auth'
 import type { DatabaseClient } from '../db'
 import { telegramStaff, users } from '../db/schema'
@@ -33,10 +33,19 @@ export function listUsers(db: DatabaseClient) {
   return db.select({ id: users.id, name: users.name, email: users.email, role: users.role }).from(users).all()
 }
 
-export function updateUserRole(db: DatabaseClient, userId: unknown, role: unknown) {
-  const user = db.update(users).set({ role: role === 'admin' || role === 'cashier' ? role : invalid('Invalid role') }).where(eq(users.id, id(userId))).returning({ id: users.id, name: users.name, email: users.email, role: users.role }).get()
-  if (!user) throw new DomainError('USER_NOT_FOUND', 'User not found')
-  return user
+export function updateUserRole(db: DatabaseClient, userId: unknown, nextRole: unknown) {
+  const targetId = id(userId)
+  const targetRole = role(nextRole)
+  return db.transaction((tx) => {
+    const user = tx.select().from(users).where(eq(users.id, targetId)).get()
+    if (!user) throw new DomainError('USER_NOT_FOUND', 'User not found')
+    if (user.role === 'admin' && targetRole !== 'admin'
+      && !tx.select({ id: users.id }).from(users).where(and(eq(users.role, 'admin'), ne(users.id, targetId))).limit(1).get()) {
+      throw new DomainError('LAST_ADMIN_CONFLICT', 'The final administrator cannot be demoted')
+    }
+    return tx.update(users).set({ role: targetRole }).where(eq(users.id, targetId))
+      .returning({ id: users.id, name: users.name, email: users.email, role: users.role }).get()!
+  }, { behavior: 'immediate' })
 }
 
 export function listTelegramStaff(db: DatabaseClient) {

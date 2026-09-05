@@ -7,6 +7,7 @@
   type SaleDetail = Sale & { customerId: number | null; items: Array<{ id: number; productName: string; sku: string; quantity: number; unitPrice: number; lineTotal: number }> }
 
   export let actor: Actor
+  export let saleId: number | null = null
 
   const rupiah = (value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value)
   let sales: Sale[] = []
@@ -41,7 +42,10 @@
     }
   }
 
-  onMount(() => { void load() })
+  onMount(() => {
+    void load()
+    if (saleId !== null) void details(saleId)
+  })
 </script>
 
 <section class="card">

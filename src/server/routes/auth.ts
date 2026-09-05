@@ -5,12 +5,11 @@ import { SESSION_COOKIE, verifyPassword } from '../auth'
 import type { DatabaseClient } from '../db'
 import { users } from '../db/schema'
 
-type AuthRouteOptions = { db: DatabaseClient; sessionSecret: string }
+type AuthRouteOptions = { db: DatabaseClient; sessionSecret: string; appBaseUrl: string }
 
-const cookieOptions = { httpOnly: true, path: '/', sameSite: 'Lax' as const }
-
-export function createAuthRoutes({ db, sessionSecret }: AuthRouteOptions) {
+export function createAuthRoutes({ db, sessionSecret, appBaseUrl }: AuthRouteOptions) {
   const app = new Hono()
+  const cookieOptions = { httpOnly: true, path: '/', sameSite: 'Lax' as const, secure: new URL(appBaseUrl).protocol === 'https:' }
 
   app.post('/login', async (c) => {
     const body = await c.req.json().catch(() => null)

@@ -8,14 +8,14 @@ import { createTestDatabase } from './helpers/database'
 const databases: ReturnType<typeof createTestDatabase>[] = []
 afterEach(() => { for (const db of databases.splice(0)) db.$client.close() })
 
-function setup() {
+function setup(appBaseUrl = 'https://pos.example.test/') {
   const db = createTestDatabase()
   databases.push(db)
   db.insert(users).values({ id: 1, name: 'Cashier', email: 'cashier@test', passwordHash: 'unused', role: 'cashier' }).run()
   db.insert(telegramStaff).values({ userId: 1, telegramUserId: 1001 }).run()
   const product = db.insert(products).values({ name: 'Coffee', sku: 'COF-1', barcode: '123456', salePrice: 15000, stockQuantity: 10 }).returning().get()!
   const sent: Array<{ text: string; markup?: InlineKeyboardMarkup }> = []
-  const app = createApp({ db, sessionSecret: 'session', telegramEnabled: true, telegramWebhookSecret: 'secret',
+  const app = createApp({ db, appBaseUrl, sessionSecret: 'session', telegramEnabled: true, telegramWebhookSecret: 'secret',
     telegramClient: { async sendMessage(_chatId, text, markup) { sent.push({ text, markup }) } } })
   let updateId = 0
   const send = async (action: string, callback = false) => {
@@ -63,6 +63,14 @@ test('confirmed Telegram sale creates shared snapshots, stock movements, and a r
   expect(t.draft()).toBeUndefined()
   expect(t.sent.at(-1)?.text).toMatch(/INV-/)
   expect(t.sent.at(-1)?.text).toContain('30000')
+  expect(t.sent.at(-1)?.text).toContain('https://pos.example.test/sales/1')
+})
+
+test('Telegram receipt links support the configured localhost development origin', async () => {
+  const t = setup('http://localhost:3000')
+  await t.review()
+  await t.tap('sale:confirm')
+  expect(t.sent.at(-1)?.text).toContain('http://localhost:3000/sales/1')
 })
 
 test('concurrent repeated confirms with distinct updates create only one sale and old confirms cannot buy a new draft', async () => {

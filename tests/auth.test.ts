@@ -6,7 +6,7 @@ import { createTestDatabase } from './helpers/database'
 
 const password = 'secret123'
 
-async function appWithUser(role: 'admin' | 'cashier' = 'cashier') {
+async function appWithUser(role: 'admin' | 'cashier' = 'cashier', appBaseUrl = 'http://localhost:3000') {
   const db = createTestDatabase()
   await db.insert(users).values({
     name: 'Test User',
@@ -14,7 +14,7 @@ async function appWithUser(role: 'admin' | 'cashier' = 'cashier') {
     passwordHash: await Bun.password.hash(password),
     role,
   })
-  return createApp({ db, sessionSecret: 'test-session-secret' })
+  return createApp({ db, sessionSecret: 'test-session-secret', appBaseUrl })
 }
 
 test('hashes passwords without retaining the plaintext', async () => {
@@ -42,7 +42,14 @@ test('bootstraps exactly one initial administrator', async () => {
   })).rejects.toThrow('An administrator already exists')
 })
 
-test('logs in with a valid password and issues a secure session cookie', async () => {
+test('bootstrap does not reopen on an existing database without an administrator', async () => {
+  const db = createTestDatabase()
+  db.insert(users).values({ name: 'Cashier', email: 'cashier@test', passwordHash: 'unused', role: 'cashier' }).run()
+  await expect(createBootstrapAdmin(db, { name: 'Untrusted recovery', email: 'new@test', password })).rejects.toThrow('An administrator already exists')
+  expect(db.select().from(users).all()).toHaveLength(1)
+})
+
+test('logs in with a valid password and issues an HTTP-only localhost session cookie', async () => {
   const app = await appWithUser()
 
   const login = await app.request('/api/auth/login', {
@@ -55,6 +62,20 @@ test('logs in with a valid password and issues a secure session cookie', async (
   expect(login.headers.get('set-cookie')).toMatch(/telepos_session=\d+\.[^;]+/)
   expect(login.headers.get('set-cookie')).toContain('HttpOnly')
   expect(login.headers.get('set-cookie')).toContain('SameSite=Lax')
+  expect(login.headers.get('set-cookie')).not.toContain('Secure')
+})
+
+test('HTTPS deployment config sets Secure on login and logout cookies behind an HTTP proxy', async () => {
+  const app = await appWithUser('cashier', 'https://pos.example.test')
+  const login = await app.request('http://internal:3000/api/auth/login', {
+    method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-proto': 'http' },
+    body: JSON.stringify({ email: 'cashier@example.test', password }),
+  })
+  expect(login.status).toBe(204)
+  expect(login.headers.get('set-cookie')).toContain('Secure')
+  const logout = await app.request('http://internal:3000/api/auth/logout', { method: 'POST' })
+  expect(logout.headers.get('set-cookie')).toContain('Secure')
+  expect(logout.headers.get('set-cookie')).toContain('Max-Age=0')
 })
 
 test('rejects invalid credentials', async () => {

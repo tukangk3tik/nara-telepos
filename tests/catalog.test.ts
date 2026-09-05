@@ -1,7 +1,8 @@
 import { expect, test } from 'bun:test'
 import { eq } from 'drizzle-orm'
 import { createApp } from '../src/server/app'
-import { expenseCategories, products, stockMovements, telegramStaff, users } from '../src/server/db/schema'
+import { customers, expenseCategories, products, stockMovements, telegramStaff, users } from '../src/server/db/schema'
+import { updateCustomer } from '../src/server/services/catalog'
 import { createTestDatabase } from './helpers/database'
 
 const password = 'secret123'
@@ -40,14 +41,49 @@ test('only an admin can adjust stock and every adjustment records a movement', a
   const product = await db.insert(products).values({ name: 'Coffee', sku: 'COF-1', salePrice: 15000, stockQuantity: 2 }).returning({ id: products.id }).get()
 
   expect((await cashierRequest(`/api/products/${product!.id}/stock-adjustments`, {
-    method: 'POST', body: JSON.stringify({ quantityDelta: 5 }),
+    method: 'POST', body: JSON.stringify({ quantityDelta: 5, reason: 'Shelf recount' }),
   })).status).toBe(403)
 
   expect((await adminRequest(`/api/products/${product!.id}/stock-adjustments`, {
-    method: 'POST', body: JSON.stringify({ quantityDelta: 5 }),
+    method: 'POST', body: JSON.stringify({ quantityDelta: 5, reason: '  Shelf recount  ' }),
   })).status).toBe(200)
   expect(db.select({ stockQuantity: products.stockQuantity }).from(products).where(eq(products.id, product!.id)).get()).toEqual({ stockQuantity: 7 })
-  expect(db.select({ quantityDelta: stockMovements.quantityDelta, reason: stockMovements.reason }).from(stockMovements).where(eq(stockMovements.productId, product!.id)).get()).toEqual({ quantityDelta: 5, reason: 'adjustment' })
+  expect(db.select().from(stockMovements).where(eq(stockMovements.productId, product!.id)).get()).toMatchObject({ quantityDelta: 5, reason: 'adjustment', explanation: 'Shelf recount' })
+})
+
+test('stock adjustments reject missing or blank explanations without changing stock or movements', async () => {
+  const { db, adminRequest } = await setup()
+  const product = db.insert(products).values({ name: 'Coffee', sku: 'COF-1', salePrice: 15000, stockQuantity: 2 }).returning().get()!
+  for (const reason of [undefined, null, '', ' \n\t ', 123]) {
+    expect((await adminRequest(`/api/products/${product.id}/stock-adjustments`, {
+      method: 'POST', body: JSON.stringify({ quantityDelta: 1, reason }),
+    })).status).toBe(400)
+    expect(db.select().from(products).where(eq(products.id, product.id)).get()?.stockQuantity).toBe(2)
+    expect(db.select().from(stockMovements).all()).toHaveLength(0)
+  }
+})
+
+test('an adjustment movement failure rolls back the stock change', async () => {
+  const { db, adminRequest } = await setup()
+  const product = db.insert(products).values({ name: 'Coffee', sku: 'COF-1', salePrice: 15000, stockQuantity: 2 }).returning().get()!
+  db.$client.exec("CREATE TRIGGER reject_movement BEFORE INSERT ON stock_movements BEGIN SELECT RAISE(ABORT, 'audit unavailable'); END")
+  expect((await adminRequest(`/api/products/${product.id}/stock-adjustments`, {
+    method: 'POST', body: JSON.stringify({ quantityDelta: 1, reason: 'Shelf recount' }),
+  })).status).toBe(500)
+  expect(db.select().from(products).where(eq(products.id, product.id)).get()?.stockQuantity).toBe(2)
+  expect(db.select().from(stockMovements).all()).toHaveLength(0)
+})
+
+test('stock adjustment overflow is rejected before any stock or movement write', async () => {
+  const { db, adminRequest } = await setup()
+  const product = db.insert(products).values({ name: 'Coffee', sku: 'COF-1', salePrice: 15000, stockQuantity: Number.MAX_SAFE_INTEGER }).returning().get()!
+  const response = await adminRequest(`/api/products/${product.id}/stock-adjustments`, {
+    method: 'POST', body: JSON.stringify({ quantityDelta: 1, reason: 'Shelf recount' }),
+  })
+  expect(response.status).toBe(400)
+  expect(await response.json()).toEqual({ error: 'INVALID_INPUT' })
+  expect(db.select().from(products).where(eq(products.id, product.id)).get()?.stockQuantity).toBe(Number.MAX_SAFE_INTEGER)
+  expect(db.select().from(stockMovements).all()).toHaveLength(0)
 })
 
 test('a product edit cannot change stock outside an adjustment movement', async () => {
@@ -61,8 +97,8 @@ test('a product edit cannot change stock outside an adjustment movement', async 
   expect(db.select({ id: stockMovements.id }).from(stockMovements).where(eq(stockMovements.productId, product!.id)).all()).toEqual([])
 })
 
-test('a cashier can create, search, and edit a customer', async () => {
-  const { cashierRequest } = await setup()
+test('a cashier can create and search customers but only an admin can edit them', async () => {
+  const { db, adminRequest, cashierRequest } = await setup()
   const created = await cashierRequest('/api/customers', { method: 'POST', body: JSON.stringify({ name: 'Maya', phone: '08123' }) })
 
   expect(created.status).toBe(201)
@@ -70,7 +106,13 @@ test('a cashier can create, search, and edit a customer', async () => {
   expect(await (await cashierRequest('/api/customers?q=maya')).json()).toMatchObject([{ id: customer.id, name: 'Maya' }])
   expect((await cashierRequest(`/api/customers/${customer.id}`, {
     method: 'PUT', body: JSON.stringify({ name: 'Maya Putri', phone: '08999' }),
+  })).status).toBe(403)
+  expect(() => updateCustomer(db, customer.id, { name: 'Forbidden edit' }, { id: 2, role: 'cashier' })).toThrow('Administrator access required')
+  expect(db.select().from(customers).where(eq(customers.id, customer.id)).get()).toMatchObject({ name: 'Maya', phone: '08123' })
+  expect((await adminRequest(`/api/customers/${customer.id}`, {
+    method: 'PUT', body: JSON.stringify({ name: 'Maya Putri', phone: '08999' }),
   })).status).toBe(200)
+  expect(db.select().from(customers).where(eq(customers.id, customer.id)).get()).toMatchObject({ name: 'Maya Putri', phone: '08999' })
 })
 
 test('inactive expense categories are excluded from active choices', async () => {
@@ -109,4 +151,23 @@ test('only an admin can manage products, users, and the store profile', async ()
   expect((await cashierRequest('/api/settings/profile', { method: 'PUT', body: JSON.stringify({ storeName: 'Nara', receiptFooter: 'Thanks' }) })).status).toBe(403)
   expect((await adminRequest('/api/settings/profile', { method: 'PUT', body: JSON.stringify({ storeName: 'Nara', receiptFooter: 'Thanks' }) })).status).toBe(200)
   expect((await adminRequest('/api/settings/users', { method: 'POST', body: JSON.stringify({ name: 'New Cashier', email: 'new@example.test', password, role: 'cashier' }) })).status).toBe(201)
+})
+
+test('the final administrator cannot be demoted and remains able to manage users', async () => {
+  const { db, admin, adminRequest } = await setup()
+  expect((await adminRequest(`/api/settings/users/${admin.id}`, {
+    method: 'PUT', body: JSON.stringify({ role: 'cashier' }),
+  })).status).toBe(409)
+  expect(db.select({ role: users.role }).from(users).where(eq(users.id, admin.id)).get()).toEqual({ role: 'admin' })
+  expect((await adminRequest('/api/settings/users')).status).toBe(200)
+})
+
+test('an administrator can be demoted when another administrator remains', async () => {
+  const { db, admin, adminRequest } = await setup()
+  const other = db.insert(users).values({ name: 'Other Admin', email: 'other@example.test', passwordHash: 'unused', role: 'admin' }).returning().get()!
+  expect((await adminRequest(`/api/settings/users/${admin.id}`, {
+    method: 'PUT', body: JSON.stringify({ role: 'cashier' }),
+  })).status).toBe(200)
+  expect(db.select({ id: users.id }).from(users).where(eq(users.role, 'admin')).all()).toEqual([{ id: other.id }])
+  expect((await adminRequest('/api/settings/users')).status).toBe(403)
 })

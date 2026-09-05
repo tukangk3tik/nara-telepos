@@ -51,7 +51,7 @@
     <a class="brand" href="/pos" onclick={(event) => { event.preventDefault(); navigate('/pos') }}>Nara TelePOS</a>
     <nav aria-label="Main navigation">
       <a class:active={path === '/pos'} href="/pos" onclick={(event) => { event.preventDefault(); navigate('/pos') }}>POS</a>
-      <a class:active={path === '/sales'} href="/sales" onclick={(event) => { event.preventDefault(); navigate('/sales') }}>Sales</a>
+      <a class:active={path === '/sales' || path.startsWith('/sales/')} href="/sales" onclick={(event) => { event.preventDefault(); navigate('/sales') }}>Sales</a>
       <a class:active={path === '/expenses'} href="/expenses" onclick={(event) => { event.preventDefault(); navigate('/expenses') }}>Expenses</a>
       {#if actor.role === 'admin'}
         <a class:active={path === '/settings'} href="/settings" onclick={(event) => { event.preventDefault(); navigate('/settings') }}>Settings</a>
@@ -61,8 +61,8 @@
   </header>
 
   <main class="page">
-    {#if path === '/sales'}
-      <Sales {actor} />
+    {#if path === '/sales' || /^\/sales\/[1-9]\d*$/.test(path)}
+      {#key path}<Sales {actor} saleId={path === '/sales' ? null : Number(path.split('/')[2])} />{/key}
     {:else if path === '/expenses'}
       <Expenses />
     {:else if path === '/settings' && actor.role === 'admin'}
