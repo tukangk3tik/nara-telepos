@@ -47,8 +47,9 @@ export function updateProduct(db: DatabaseClient, id: number, input: Partial<Pro
   positiveId(id)
   const existing = db.select().from(products).where(eq(products.id, id)).get()
   if (!existing) throw new DomainError('PRODUCT_NOT_FOUND', 'Product not found')
+  const { stockQuantity: _ignoredStockQuantity, ...changes } = input
   return db.update(products).set({
-    ...productValues({ ...existing, ...input }),
+    ...productValues({ ...existing, ...changes, stockQuantity: existing.stockQuantity }),
     updatedAt: timestamp,
   }).where(eq(products.id, id)).returning().get()
 }

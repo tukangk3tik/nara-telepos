@@ -50,6 +50,17 @@ test('only an admin can adjust stock and every adjustment records a movement', a
   expect(db.select({ quantityDelta: stockMovements.quantityDelta, reason: stockMovements.reason }).from(stockMovements).where(eq(stockMovements.productId, product!.id)).get()).toEqual({ quantityDelta: 5, reason: 'adjustment' })
 })
 
+test('a product edit cannot change stock outside an adjustment movement', async () => {
+  const { db, adminRequest } = await setup()
+  const product = await db.insert(products).values({ name: 'Coffee', sku: 'COF-1', salePrice: 15000, stockQuantity: 2 }).returning({ id: products.id }).get()
+
+  expect((await adminRequest(`/api/products/${product!.id}`, {
+    method: 'PUT', body: JSON.stringify({ name: 'Coffee Beans', sku: 'COF-1', salePrice: 16000, stockQuantity: 99 }),
+  })).status).toBe(200)
+  expect(db.select({ stockQuantity: products.stockQuantity, salePrice: products.salePrice }).from(products).where(eq(products.id, product!.id)).get()).toEqual({ stockQuantity: 2, salePrice: 16000 })
+  expect(db.select({ id: stockMovements.id }).from(stockMovements).where(eq(stockMovements.productId, product!.id)).all()).toEqual([])
+})
+
 test('a cashier can create, search, and edit a customer', async () => {
   const { cashierRequest } = await setup()
   const created = await cashierRequest('/api/customers', { method: 'POST', body: JSON.stringify({ name: 'Maya', phone: '08123' }) })
