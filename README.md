@@ -19,7 +19,7 @@ Set these values in `.env`:
 | `SESSION_SECRET` | Long random value for signed sessions, for example `openssl rand -base64 32`. |
 | `APP_BASE_URL` | Public base URL; use `http://localhost:3000` for local web-only use and `https://pos.example.com` in production. |
 | `PORT` | HTTP listener port (default `3000`). |
-| `TELEGRAM_ENABLED` | `false` for web-only use; set to `true` only when the three Telegram values below are configured. |
+| `TELEGRAM_ENABLED` | `false` for web-only use; set to `true` only after the bot token and webhook secret below are configured. |
 | `TELEGRAM_BOT_TOKEN` | BotFather token. Required when Telegram is enabled. |
 | `TELEGRAM_WEBHOOK_SECRET` | Random webhook secret sent by Telegram as a request header. Required when Telegram is enabled. |
 
@@ -58,6 +58,11 @@ Check the running service with `curl -f https://pos.example.com/health`.
 Telegram webhooks require a publicly reachable HTTPS URL. Set `APP_BASE_URL=https://pos.example.com`, `TELEGRAM_ENABLED=true`, the BotFather token, and a long random `TELEGRAM_WEBHOOK_SECRET`; then register the webhook with Telegram:
 
 ```sh
+# In a trusted shell, export the values documented in .env for this command.
+set -a
+. ./.env
+set +a
+
 curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
   --data-urlencode "url=$APP_BASE_URL/telegram/webhook" \
   --data-urlencode "secret_token=$TELEGRAM_WEBHOOK_SECRET"
