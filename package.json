@@ -7,6 +7,7 @@
     "build": "vite build",
     "start": "bun src/server/index.ts",
     "test": "bun test",
+    "bootstrap:admin": "bun src/server/bootstrap-admin.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun src/server/db/migrate.ts"
   },
