@@ -74,8 +74,8 @@
       <form class="grid gap-4" onsubmit={create}>
         <div class="grid gap-2">
           <Label for="expense-category">Category</Label>
-          <Select.Root bind:value={expenseCategoryId} disabled={!categories.length} required>
-            <Select.Trigger id="expense-category" class="w-full"><Select.Value placeholder={categories.length ? 'Select category' : 'No active categories'} /></Select.Trigger>
+          <Select.Root bind:value={expenseCategoryId} disabled={!categories.length} name="expenseCategoryId" required>
+            <Select.Trigger id="expense-category" aria-label="Category" class="w-full"><Select.Value placeholder={categories.length ? 'Select category' : 'No active categories'} /></Select.Trigger>
             <Select.Content>{#each categories as category}<Select.Item value={String(category.id)}>{category.name}</Select.Item>{/each}</Select.Content>
           </Select.Root>
         </div>
