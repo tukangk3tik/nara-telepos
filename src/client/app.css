@@ -31,17 +31,14 @@
 * { box-sizing: border-box; }
 body { margin: 0; }
 button, input, select, textarea { font: inherit; }
-button { border: 0; border-radius: .4rem; background: #156b52; color: white; cursor: pointer; padding: .55rem .8rem; }
-button:disabled { cursor: not-allowed; opacity: .55; }
-button.secondary { background: #e5e7eb; color: #1f2937; }
+button:not([data-slot="button"]) { border: 0; border-radius: .4rem; background: #334155; color: white; cursor: pointer; padding: .55rem .8rem; }
+button:not([data-slot="button"]):disabled { cursor: not-allowed; opacity: .55; }
+button.secondary { background: #e2e8f0; color: #1e293b; }
 button.danger { background: #b42318; }
-input, select, textarea { border: 1px solid #cbd5e1; border-radius: .35rem; padding: .5rem; width: 100%; }
+input:not([data-slot="input"]), select, textarea { border: 1px solid #cbd5e1; border-radius: .35rem; padding: .5rem; width: 100%; }
 textarea { min-height: 4.5rem; resize: vertical; }
-label { display: grid; gap: .35rem; font-weight: 600; }
+label:not([data-slot="label"]) { display: grid; gap: .35rem; font-weight: 600; }
 small, .muted { color: #64748b; font-weight: 400; }
-.app-header { align-items: center; background: #123b32; color: white; display: flex; gap: 1rem; min-height: 3.8rem; padding: .6rem max(1rem, calc((100vw - 1200px) / 2)); }
-.brand { color: white; font-size: 1.1rem; font-weight: 800; margin-right: auto; text-decoration: none; }
-nav { display: flex; gap: .4rem; } nav a { border-radius: .35rem; color: #d1fae5; padding: .45rem .6rem; text-decoration: none; } nav a.active, nav a:hover { background: #1b5748; color: white; }
 .page { margin: 0 auto; max-width: 1200px; padding: 1rem; }
 .card { background: white; border: 1px solid #e2e8f0; border-radius: .7rem; box-shadow: 0 1px 2px #0f172a0d; padding: 1rem; }
 .card h1, .card h2 { margin-top: 0; }
