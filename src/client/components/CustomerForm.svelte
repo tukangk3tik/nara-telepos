@@ -1,10 +1,13 @@
 <script lang="ts">
   import { api } from '../lib/api'
+  import { Alert } from '$lib/components/ui/alert/index.js'
+  import { Button } from '$lib/components/ui/button/index.js'
+  import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card/index.js'
+  import { Input } from '$lib/components/ui/input/index.js'
+  import { Label } from '$lib/components/ui/label/index.js'
 
   type Customer = { id: number; name: string; phone: string | null; email: string | null }
-
   export let onSelect: (customer: Customer) => void
-
   let query = ''
   let customers: Customer[] = []
   let name = ''
@@ -37,26 +40,22 @@
   }
 </script>
 
-<section class="card">
-  <h2>Customer <span class="muted">(optional)</span></h2>
-  <div class="inline-form">
-    <label>Find customer <input bind:value={query} oninput={search} placeholder="Name, phone, or email" /></label>
-  </div>
-  {#if customers.length}
-    <ul class="choice-list">
-      {#each customers as customer (customer.id)}
-        <li><button class="secondary" onclick={() => onSelect(customer)}>{customer.name}{customer.phone ? ` · ${customer.phone}` : ''}</button></li>
-      {/each}
-    </ul>
-  {/if}
-  <details>
-    <summary>Create customer</summary>
-    <form onsubmit={create} class="inline-form">
-      <label>Name <input bind:value={name} required /></label>
-      <label>Phone <input bind:value={phone} inputmode="tel" /></label>
-      <label>Email <input bind:value={email} type="email" /></label>
-      <button>Add customer</button>
-    </form>
-  </details>
-  {#if error}<p class="error" role="alert">{error}</p>{/if}
-</section>
+<Card>
+  <CardHeader><CardTitle>Customer <span class="text-muted-foreground font-normal">(optional)</span></CardTitle></CardHeader>
+  <CardContent class="grid gap-4">
+    <div class="grid gap-2"><Label for="customer-search">Find customer</Label><Input id="customer-search" bind:value={query} oninput={search} placeholder="Name, phone, or email" /></div>
+    {#if customers.length}
+      <ul class="flex flex-wrap gap-2">{#each customers as customer (customer.id)}<li><Button variant="secondary" onclick={() => onSelect(customer)}>{customer.name}{customer.phone ? ` · ${customer.phone}` : ''}</Button></li>{/each}</ul>
+    {/if}
+    <details class="rounded-lg border p-3">
+      <summary class="cursor-pointer font-medium">Create customer</summary>
+      <form onsubmit={create} class="mt-4 grid gap-4 sm:grid-cols-3">
+        <div class="grid gap-2"><Label for="customer-name">Name</Label><Input id="customer-name" bind:value={name} required /></div>
+        <div class="grid gap-2"><Label for="customer-phone">Phone</Label><Input id="customer-phone" bind:value={phone} inputmode="tel" /></div>
+        <div class="grid gap-2"><Label for="customer-email">Email</Label><Input id="customer-email" bind:value={email} type="email" /></div>
+        <Button class="sm:col-span-3 sm:w-fit" type="submit">Add customer</Button>
+      </form>
+    </details>
+    {#if error}<Alert variant="destructive" role="alert">{error}</Alert>{/if}
+  </CardContent>
+</Card>
