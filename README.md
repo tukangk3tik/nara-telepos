@@ -40,7 +40,7 @@ After migrations and bootstrapping an administrator, add sample sales and expens
 bun run seed:demo
 ```
 
-The command is never run by `dev` or `start`. Each invocation adds two demo sales and two demo expenses while reusing the demo product, customer, and expense category.
+The command is never run by `dev` or `start`. Each invocation atomically adds two demo sales and two demo expenses while reusing the demo product, customer, and expense category.
 
 ### Local web-only mode
 

@@ -4,6 +4,8 @@ import { customers, products, saleItems, sales, stockMovements, users } from '..
 import { DomainError, InsufficientStockError, SaleAlreadyCancelledError } from '../domain/errors'
 import type { Actor, SaleInput } from '../domain/types'
 
+type DatabaseExecutor = Omit<DatabaseClient, '$client'>
+
 export type SaleReceipt = {
   id: number
   invoiceNumber: string
@@ -41,7 +43,7 @@ function validateSaleInput(input: SaleInput) {
   return { source: input.source, paymentMethod: input.paymentMethod, customerId, items }
 }
 
-export async function createCompletedSale(db: DatabaseClient, input: SaleInput, actor: Actor): Promise<SaleReceipt> {
+export function createCompletedSaleSync(db: DatabaseExecutor, input: SaleInput, actor: Actor): SaleReceipt {
   return db.transaction((tx) => {
     const saleInput = validateSaleInput(input)
     const saleActor = validateActor(actor)
@@ -108,6 +110,10 @@ export async function createCompletedSale(db: DatabaseClient, input: SaleInput, 
       lines: lines.map(({ product, quantity, lineTotal }) => ({ productName: product.name, quantity, unitPrice: product.salePrice, lineTotal })),
     }
   }, { behavior: 'immediate' })
+}
+
+export async function createCompletedSale(db: DatabaseExecutor, input: SaleInput, actor: Actor): Promise<SaleReceipt> {
+  return createCompletedSaleSync(db, input, actor)
 }
 
 export async function cancelSale(db: DatabaseClient, saleId: number, reason: string, actor: Actor): Promise<void> {

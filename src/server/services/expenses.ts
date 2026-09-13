@@ -4,6 +4,8 @@ import { expenseCategories, expenses, users } from '../db/schema'
 import { DomainError } from '../domain/errors'
 import type { Actor, ExpenseInput, ExpenseReceipt } from '../domain/types'
 
+type DatabaseExecutor = Omit<DatabaseClient, '$client'>
+
 const invalid = (message: string): never => { throw new DomainError('INVALID_INPUT', message) }
 const isPositiveInteger = (value: unknown): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value > 0
 
@@ -28,7 +30,7 @@ function validateExpenseInput(input: ExpenseInput) {
   return { expenseCategoryId: input.expenseCategoryId, amount: input.amount, transactionDate, notes: notes || null, source: input.source }
 }
 
-export async function createExpense(db: DatabaseClient, input: ExpenseInput, actor: Actor): Promise<ExpenseReceipt> {
+export function createExpenseSync(db: DatabaseExecutor, input: ExpenseInput, actor: Actor): ExpenseReceipt {
   return db.transaction((tx) => {
     const expenseInput = validateExpenseInput(input)
     const expenseActor = validateActor(actor)
@@ -48,4 +50,8 @@ export async function createExpense(db: DatabaseClient, input: ExpenseInput, act
 
     return { ...expense, amount: expenseInput.amount, categoryName: category.name, transactionDate: expenseInput.transactionDate }
   }, { behavior: 'immediate' })
+}
+
+export async function createExpense(db: DatabaseExecutor, input: ExpenseInput, actor: Actor): Promise<ExpenseReceipt> {
+  return createExpenseSync(db, input, actor)
 }

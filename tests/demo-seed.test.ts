@@ -23,3 +23,13 @@ test('adds repeatable demo sales and expenses without duplicating demo master da
   expect(db.select({ count: count() }).from(sales).get()!.count).toBe(4)
   expect(db.select({ count: count() }).from(expenses).get()!.count).toBe(4)
 })
+
+test('does not leave demo sales behind when demo expenses cannot be created', async () => {
+  const db = createTestDatabase()
+  db.insert(users).values({ name: 'Owner', email: 'owner@example.test', passwordHash: 'unused', role: 'admin' }).run()
+  db.insert(expenseCategories).values({ name: 'Demo supplies', isActive: false }).run()
+
+  await expect(seedDemo(db)).rejects.toThrow('Expense category is inactive')
+  expect(db.select({ count: count() }).from(sales).get()!.count).toBe(0)
+  expect(db.select({ count: count() }).from(expenses).get()!.count).toBe(0)
+})
