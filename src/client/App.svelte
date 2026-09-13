@@ -19,11 +19,12 @@
 
   let actor: Actor | null = null
   let loading = true
-  let path = window.location.pathname === '/' ? '/pos' : window.location.pathname
+  let path = window.location.pathname
 
   async function loadActor() {
     try {
       actor = await api<Actor>('/api/auth/me')
+      if (path === '/') navigate(actor.role === 'admin' ? '/dashboard' : '/pos')
     } catch {
       actor = null
     } finally {
@@ -62,11 +63,13 @@
         <Button variant="outline" size="sm" onclick={logout}><LogOut /> <span>Sign out</span></Button>
       </div>
       <nav aria-label="Main navigation" class="flex gap-1 overflow-x-auto border-t border-slate-100 px-3 py-2 md:hidden">
+        {#if actor.role === 'admin'}
+          <a class="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900" class:bg-slate-200={path === '/dashboard'} class:text-slate-900={path === '/dashboard'} href="/dashboard" onclick={(event) => { event.preventDefault(); navigate('/dashboard') }}><LayoutDashboard /> <span>Dashboard</span></a>
+        {/if}
         <a class="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900" class:bg-slate-200={path === '/pos'} class:text-slate-900={path === '/pos'} href="/pos" onclick={(event) => { event.preventDefault(); navigate('/pos') }}><ShoppingCart /> <span>POS</span></a>
         <a class="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900" class:bg-slate-200={path === '/sales' || path.startsWith('/sales/')} class:text-slate-900={path === '/sales' || path.startsWith('/sales/')} href="/sales" onclick={(event) => { event.preventDefault(); navigate('/sales') }}><ChartNoAxesCombined /> <span>Sales</span></a>
         <a class="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900" class:bg-slate-200={path === '/expenses'} class:text-slate-900={path === '/expenses'} href="/expenses" onclick={(event) => { event.preventDefault(); navigate('/expenses') }}><ReceiptText /> <span>Expenses</span></a>
         {#if actor.role === 'admin'}
-          <a class="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900" class:bg-slate-200={path === '/dashboard'} class:text-slate-900={path === '/dashboard'} href="/dashboard" onclick={(event) => { event.preventDefault(); navigate('/dashboard') }}><LayoutDashboard /> <span>Dashboard</span></a>
           <a class="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900" class:bg-slate-200={path === '/settings'} class:text-slate-900={path === '/settings'} href="/settings" onclick={(event) => { event.preventDefault(); navigate('/settings') }}><SettingsIcon /> <span>Settings</span></a>
         {/if}
       </nav>
@@ -75,11 +78,13 @@
     <div class="md:flex">
       <aside class="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-56 shrink-0 border-r border-slate-200 bg-white p-3 md:block">
         <nav aria-label="Main navigation" class="grid gap-1">
+          {#if actor.role === 'admin'}
+            <a class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900" class:bg-slate-200={path === '/dashboard'} class:text-slate-900={path === '/dashboard'} href="/dashboard" onclick={(event) => { event.preventDefault(); navigate('/dashboard') }}><LayoutDashboard /> <span>Dashboard</span></a>
+          {/if}
           <a class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900" class:bg-slate-200={path === '/pos'} class:text-slate-900={path === '/pos'} href="/pos" onclick={(event) => { event.preventDefault(); navigate('/pos') }}><ShoppingCart /> <span>POS</span></a>
           <a class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900" class:bg-slate-200={path === '/sales' || path.startsWith('/sales/')} class:text-slate-900={path === '/sales' || path.startsWith('/sales/')} href="/sales" onclick={(event) => { event.preventDefault(); navigate('/sales') }}><ChartNoAxesCombined /> <span>Sales</span></a>
           <a class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900" class:bg-slate-200={path === '/expenses'} class:text-slate-900={path === '/expenses'} href="/expenses" onclick={(event) => { event.preventDefault(); navigate('/expenses') }}><ReceiptText /> <span>Expenses</span></a>
           {#if actor.role === 'admin'}
-            <a class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900" class:bg-slate-200={path === '/dashboard'} class:text-slate-900={path === '/dashboard'} href="/dashboard" onclick={(event) => { event.preventDefault(); navigate('/dashboard') }}><LayoutDashboard /> <span>Dashboard</span></a>
             <a class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900" class:bg-slate-200={path === '/settings'} class:text-slate-900={path === '/settings'} href="/settings" onclick={(event) => { event.preventDefault(); navigate('/settings') }}><SettingsIcon /> <span>Settings</span></a>
           {/if}
         </nav>

@@ -19,6 +19,15 @@ test('dashboard navigation and route are admin-only', () => {
   expect(source).toContain("path === '/dashboard'")
 })
 
+test('admins open on dashboard and see it as the first menu item', () => {
+  const source = readFileSync(new URL('../src/client/App.svelte', import.meta.url), 'utf8')
+  expect(source).toContain("if (path === '/') navigate(actor.role === 'admin' ? '/dashboard' : '/pos')")
+  const mobileNav = source.slice(source.indexOf('<nav aria-label="Main navigation" class="flex'), source.indexOf('</nav>', source.indexOf('<nav aria-label="Main navigation" class="flex')))
+  const desktopNav = source.slice(source.indexOf('<nav aria-label="Main navigation" class="grid'), source.indexOf('</nav>', source.indexOf('<nav aria-label="Main navigation" class="grid')))
+  expect(mobileNav.indexOf("path === '/dashboard'")).toBeLessThan(mobileNav.indexOf("path === '/pos'"))
+  expect(desktopNav.indexOf("path === '/dashboard'")).toBeLessThan(desktopNav.indexOf("path === '/pos'"))
+})
+
 // Exercise the real route handlers without mounting the UI; only the API boundary is replaced.
 function settings(api: (path: string, options?: RequestInit) => Promise<unknown>) {
   const source = route('Settings')
