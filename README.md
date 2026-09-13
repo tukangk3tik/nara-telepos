@@ -55,6 +55,8 @@ Open `http://localhost:3000/pos`. `bun run dev` restarts the Bun server when ser
 
 ## Production and Telegram
 
+See [the Telegram setup guide](docs/telegram-setup.md) to create a bot, link staff, and register its webhook.
+
 Run the application behind an HTTPS reverse proxy, with the SQLite database on persistent storage:
 
 ```sh
