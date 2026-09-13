@@ -1,4 +1,5 @@
-import { expect, test } from 'bun:test'
+import { expect, setSystemTime, test } from 'bun:test'
+import { eq } from 'drizzle-orm'
 import { createApp } from '../src/server/app'
 import { expenseCategories, expenses, products, sales, users } from '../src/server/db/schema'
 import { serverLocalDate } from '../src/server/telegram/expense-flow'
@@ -53,6 +54,7 @@ async function setupDashboard(extraExpenses = 0) {
 
   return {
     app,
+    db,
     adminRequest: (path: string) => requestAs('admin@example.test', path),
     cashierRequest: (path: string) => requestAs('cashier@example.test', path),
   }
@@ -93,4 +95,39 @@ test('dashboard limits recent transactions and excludes cancelled sales from tot
   expect(body.recentTransactions.some((entry: { cancelled: boolean }) => entry.cancelled)).toBe(true)
   expect(body.recentTransactions.map((entry: { occurredAt: string }) => entry.occurredAt))
     .toEqual([...body.recentTransactions].map((entry: { occurredAt: string }) => entry.occurredAt).sort().reverse())
+})
+
+test('dashboard totals use the server-local day at a non-UTC boundary', async () => {
+  const previousTimezone = process.env.TZ
+  process.env.TZ = 'Pacific/Kiritimati'
+  setSystemTime(new Date('2026-09-13T12:33:01.204Z'))
+
+  try {
+    const { adminRequest, db } = await setupDashboard()
+    db.update(sales).set({ completedAt: '2026-09-13T12:33:01.204Z' })
+      .where(eq(sales.invoiceNumber, 'INV-001')).run()
+
+    const body = await (await adminRequest('/api/dashboard')).json()
+
+    expect(body.date).toBe('2026-09-14')
+    expect(body.salesTotal).toBe(15000)
+  } finally {
+    setSystemTime()
+    if (previousTimezone === undefined) delete process.env.TZ
+    else process.env.TZ = previousTimezone
+  }
+})
+
+test('dashboard orders ISO sales and SQLite expense timestamps chronologically', async () => {
+  const { adminRequest, db } = await setupDashboard()
+  const date = serverLocalDate()
+  db.update(sales).set({ completedAt: `${date}T08:00:00.000Z` })
+    .where(eq(sales.invoiceNumber, 'INV-001')).run()
+  db.update(expenses).set({ createdAt: `${date} 10:00:00` })
+    .where(eq(expenses.expenseNumber, 'EXP-001')).run()
+
+  const body = await (await adminRequest('/api/dashboard')).json()
+
+  expect(body.recentTransactions.findIndex((entry: { reference: string }) => entry.reference === 'EXP-001'))
+    .toBeLessThan(body.recentTransactions.findIndex((entry: { reference: string }) => entry.reference === 'INV-001'))
 })

@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, like, lte } from 'drizzle-orm'
+import { and, asc, eq, gte, isNull, lt, lte } from 'drizzle-orm'
 import { Hono } from 'hono'
 import type { DatabaseClient } from '../db'
 import { expenseCategories, expenses, products, sales } from '../db/schema'
@@ -20,13 +20,23 @@ export type DashboardSummary = {
   lowStockProducts: Array<{ id: number; name: string; sku: string; stockQuantity: number }>
 }
 
+const localDayUtcBounds = (date: string) => {
+  const start = new Date(`${date}T00:00:00`)
+  const end = new Date(start)
+  end.setDate(end.getDate() + 1)
+  return [start.toISOString(), end.toISOString()] as const
+}
+
+const timestamp = (value: string) => Date.parse(value.includes('T') ? value : `${value.replace(' ', 'T')}Z`)
+
 export function createDashboardRoutes({ db }: { db: DatabaseClient }) {
   const app = new Hono()
 
   app.get('/', (c) => {
     const date = serverLocalDate()
+    const [dayStart, dayEnd] = localDayUtcBounds(date)
     const salesRows = db.select({ amount: sales.totalAmount }).from(sales)
-      .where(and(like(sales.completedAt, `${date}%`), isNull(sales.cancelledAt))).all()
+      .where(and(gte(sales.completedAt, dayStart), lt(sales.completedAt, dayEnd), isNull(sales.cancelledAt))).all()
     const expenseRows = db.select({ amount: expenses.amount }).from(expenses)
       .where(eq(expenses.transactionDate, date)).all()
     const salesTotal = salesRows.reduce((total, row) => total + row.amount, 0)
@@ -52,7 +62,7 @@ export function createDashboardRoutes({ db }: { db: DatabaseClient }) {
       expensesTotal,
       netProfit: salesTotal - expensesTotal,
       recentTransactions: [...recentSales, ...recentExpenses]
-        .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt)).slice(0, 8),
+        .sort((a, b) => timestamp(b.occurredAt) - timestamp(a.occurredAt)).slice(0, 8),
       lowStockProducts: db.select({ id: products.id, name: products.name, sku: products.sku, stockQuantity: products.stockQuantity })
         .from(products).where(and(eq(products.isActive, true), lte(products.stockQuantity, 5)))
         .orderBy(asc(products.stockQuantity), asc(products.name)).all(),
