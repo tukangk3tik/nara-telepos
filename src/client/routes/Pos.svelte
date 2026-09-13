@@ -79,7 +79,7 @@
 
 <div class="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(20rem,.9fr)]">
   <Card>
-    <CardHeader><CardTitle>New sale</CardTitle></CardHeader>
+    <CardHeader><CardTitle><h1>New sale</h1></CardTitle></CardHeader>
     <CardContent class="grid gap-4">
       <div class="grid gap-2">
         <Label for="product-search">Search products</Label>
@@ -105,17 +105,17 @@
       <Card><CardContent class="flex items-center justify-between gap-3"><p>Customer: <strong>{customer.name}</strong></p><Button variant="ghost" size="sm" onclick={() => customer = null}>Clear</Button></CardContent></Card>
     {/if}
     <Card>
-      <CardHeader><CardTitle>Payment</CardTitle></CardHeader>
+      <CardHeader><CardTitle><h2>Payment</h2></CardTitle></CardHeader>
       <CardContent class="grid gap-4">
         <div class="grid gap-2">
           <div class="flex items-center justify-between gap-2"><Label for="payment-method">Payment method</Label><Badge variant="secondary">{paymentMethod.toUpperCase()}</Badge></div>
-          <Select.Root bind:value={paymentMethod}>
+          <Select.Root type="single" bind:value={paymentMethod}>
             <Select.Trigger id="payment-method" class="w-full"><Select.Value /></Select.Trigger>
             <Select.Content><Select.Item value="cash">Cash</Select.Item><Select.Item value="transfer">Transfer</Select.Item><Select.Item value="qris">QRIS</Select.Item></Select.Content>
           </Select.Root>
         </div>
         <Button disabled={!cart.length || submitting} onclick={openSaleConfirmation}>{submitting ? 'Saving…' : 'Confirm payment'}</Button>
-        {#if error}<Alert variant="destructive" role="alert">{error}</Alert>{/if}
+        {#if error && !saleDialogOpen}<Alert variant="destructive" role="alert">{error}</Alert>{/if}
       </CardContent>
     </Card>
   </div>
@@ -127,6 +127,7 @@
       <Dialog.Title>Confirm payment</Dialog.Title>
       <Dialog.Description>Complete this {paymentMethod.toUpperCase()} payment for {rupiah(cart.reduce((sum, item) => sum + item.salePrice * item.quantity, 0))}?</Dialog.Description>
     </Dialog.Header>
+    {#if error}<Alert variant="destructive" role="alert">{error}</Alert>{/if}
     <Dialog.Footer>
       <Dialog.Close disabled={submitting}>
         {#snippet child({ props })}
@@ -140,7 +141,7 @@
 
 {#if receipt}
   <Card class="mt-4 max-w-2xl">
-    <CardHeader><CardTitle>Receipt</CardTitle></CardHeader>
+    <CardHeader><CardTitle><h2>Receipt</h2></CardTitle></CardHeader>
     <CardContent class="grid gap-4">
       <p class="flex flex-wrap items-center gap-2"><strong>{receipt.invoiceNumber}</strong><Badge variant="secondary">{receipt.paymentMethod}</Badge></p>
       <ul class="divide-y">{#each receipt.lines as line}<li class="flex justify-between gap-4 py-2"><span>{line.productName} × {line.quantity}</span><strong class="whitespace-nowrap">{rupiah(line.lineTotal)}</strong></li>{/each}</ul>

@@ -14,7 +14,7 @@
 </script>
 
 <Card>
-  <CardHeader><CardTitle>Cart</CardTitle></CardHeader>
+  <CardHeader><CardTitle><h2>Cart</h2></CardTitle></CardHeader>
   <CardContent>
     {#if !items.length}
       <p class="text-muted-foreground">Search and add products to start a sale.</p>

@@ -40,6 +40,7 @@
   let quantityDelta = ''
   let adjustmentReason = ''
   let stockDialogOpen = false
+  let adjustingStock = false
   let linkToRemove: TelegramLink | null = null
   let unlinkDialogOpen = false
   let error = ''
@@ -65,6 +66,7 @@
   }
 
   function openStockDialog(product: Product) {
+    if (adjustingStock) return
     error = ''
     stockToAdjust = product
     quantityDelta = ''
@@ -84,17 +86,19 @@
   }
 
   async function adjustStock() {
-    if (!stockToAdjust) return
+    if (!stockToAdjust || adjustingStock) return
     const result = stockAdjustment({ quantityDelta, reason: adjustmentReason })
     if (!result) {
       error = adjustmentReason.trim() ? 'Enter a non-zero whole-number stock adjustment' : 'Stock adjustment reason is required'
       return
     }
     error = ''
+    adjustingStock = true
     try {
       await api<Product>(`/api/products/${stockToAdjust.id}/stock-adjustments`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ quantityDelta: result.quantityDelta, reason: result.reason }) })
       message = 'Stock adjusted'; setStockDialogOpen(false); await load()
     } catch (cause) { error = cause instanceof Error ? cause.message : 'Could not adjust stock' }
+    finally { adjustingStock = false }
   }
 
   async function saveCustomer(event: SubmitEvent) {
@@ -182,7 +186,7 @@
     <Tabs.Content value="catalog">
       <div class="grid gap-4 xl:grid-cols-3">
         <Card>
-          <CardHeader><CardTitle>Products</CardTitle></CardHeader>
+          <CardHeader><CardTitle><h2>Products</h2></CardTitle></CardHeader>
           <CardContent class="grid gap-4">
             <form onsubmit={saveProduct} class="grid gap-4">
               <div class="grid gap-2"><Label for="product-name">Name</Label><Input id="product-name" bind:value={productForm.name} required /></div>
@@ -198,7 +202,7 @@
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Customers</CardTitle></CardHeader>
+          <CardHeader><CardTitle><h2>Customers</h2></CardTitle></CardHeader>
           <CardContent class="grid gap-4">
             <form onsubmit={saveCustomer} class="grid gap-4"><div class="grid gap-2"><Label for="customer-name">Name</Label><Input id="customer-name" bind:value={customerForm.name} required /></div><div class="grid gap-2"><Label for="customer-phone">Phone</Label><Input id="customer-phone" bind:value={customerForm.phone} /></div><div class="grid gap-2"><Label for="customer-email">Email</Label><Input id="customer-email" type="email" bind:value={customerForm.email} /></div><div class="flex flex-wrap gap-2"><Button type="submit">{customerForm.id ? 'Update customer' : 'Add customer'}</Button>{#if customerForm.id}<Button variant="outline" type="button" onclick={() => customerForm = newCustomer()}>New</Button>{/if}</div></form>
             <ul class="divide-y">{#each customers as customer (customer.id)}<li class="flex flex-wrap items-center justify-between gap-2 py-3"><span>{customer.name}{customer.phone ? ` · ${customer.phone}` : ''}</span><Button variant="outline" size="sm" onclick={() => customerForm = { ...customer, phone: customer.phone ?? '', email: customer.email ?? '' }}>Edit</Button></li>{/each}</ul>
@@ -206,7 +210,7 @@
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Expense categories</CardTitle></CardHeader>
+          <CardHeader><CardTitle><h2>Expense categories</h2></CardTitle></CardHeader>
           <CardContent class="grid gap-4">
             <form onsubmit={saveCategory} class="grid gap-4"><div class="grid gap-2"><Label for="category-name">Name</Label><Input id="category-name" bind:value={categoryForm.name} required /></div><Label class="flex items-center gap-2"><input type="checkbox" bind:checked={categoryForm.isActive} /> Active</Label><div class="flex flex-wrap gap-2"><Button type="submit">{categoryForm.id ? 'Update category' : 'Add category'}</Button>{#if categoryForm.id}<Button variant="outline" type="button" onclick={() => categoryForm = newCategory()}>New</Button>{/if}</div></form>
             <ul class="divide-y">{#each categories as category (category.id)}<li class="flex flex-wrap items-center justify-between gap-2 py-3"><span>{category.name} · {category.isActive ? 'Active' : 'Inactive'}</span><Button variant="outline" size="sm" onclick={() => categoryForm = { ...category }}>Edit</Button></li>{/each}</ul>
@@ -218,7 +222,7 @@
     <Tabs.Content value="team">
       <div class="grid gap-4 xl:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle>Users</CardTitle></CardHeader>
+          <CardHeader><CardTitle><h2>Users</h2></CardTitle></CardHeader>
           <CardContent class="grid gap-4">
             <form onsubmit={saveUser} class="grid gap-4"><div class="grid gap-2"><Label for="user-name">Name</Label><Input id="user-name" bind:value={userForm.name} required /></div><div class="grid gap-2"><Label for="user-email">Email</Label><Input id="user-email" type="email" bind:value={userForm.email} required /></div><div class="grid gap-2"><Label for="user-password">Password</Label><Input id="user-password" type="password" bind:value={userForm.password} required /></div><div class="grid gap-2"><Label for="user-role">Role</Label><Select.Root type="single" bind:value={userForm.role} name="role"><Select.Trigger id="user-role" aria-label="Role" class="w-full"><Select.Value /></Select.Trigger><Select.Content><Select.Item value="cashier">Cashier</Select.Item><Select.Item value="admin">Admin</Select.Item></Select.Content></Select.Root></div><Button type="submit">Add user</Button></form>
             <ul class="divide-y">{#each users as user (user.id)}<li class="grid gap-2 py-3 sm:grid-cols-[1fr_auto] sm:items-center"><span>{user.name} · {user.email}</span><Select.Root type="single" value={user.role} onValueChange={(role) => setRole(user, role === 'admin' ? 'admin' : 'cashier')}><Select.Trigger aria-label={`Role for ${user.name}`}><Select.Value /></Select.Trigger><Select.Content><Select.Item value="cashier">Cashier</Select.Item><Select.Item value="admin">Admin</Select.Item></Select.Content></Select.Root></li>{/each}</ul>
@@ -226,9 +230,9 @@
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Telegram staff links</CardTitle></CardHeader>
+          <CardHeader><CardTitle><h2>Telegram staff links</h2></CardTitle></CardHeader>
           <CardContent class="grid gap-4">
-            <form onsubmit={linkTelegram} class="grid gap-4"><div class="grid gap-2"><Label for="telegram-user">User</Label><Select.Root type="single" bind:value={linkedUserId} name="userId" required><Select.Trigger id="telegram-user" aria-label="User" class="w-full"><Select.Value placeholder="Select user" /></Select.Trigger><Select.Content>{#each users as user}<Select.Item value={String(user.id)}>{user.name}</Select.Item>{/each}</Select.Content></Select.Root></div><div class="grid gap-2"><Label for="telegram-user-id">Telegram user ID</Label><Input id="telegram-user-id" bind:value={telegramUserId} inputmode="numeric" required /></div><Button type="submit">Link Telegram user</Button></form>
+            <form onsubmit={linkTelegram} class="grid gap-4"><div class="grid gap-2"><Label for="telegram-user">User</Label><Select.Root type="single" bind:value={linkedUserId} items={users.map((user) => ({ value: String(user.id), label: user.name }))} name="userId" required><Select.Trigger id="telegram-user" aria-label="User" class="w-full"><Select.Value placeholder="Select user" /></Select.Trigger><Select.Content>{#each users as user}<Select.Item value={String(user.id)} label={user.name} />{/each}</Select.Content></Select.Root></div><div class="grid gap-2"><Label for="telegram-user-id">Telegram user ID</Label><Input id="telegram-user-id" bind:value={telegramUserId} inputmode="numeric" required /></div><Button type="submit">Link Telegram user</Button></form>
             <ul class="divide-y">{#each telegramLinks as link (link.id)}<li class="grid gap-2 py-3"><span>{link.name} · {link.telegramUserId} · {link.isActive ? 'Active' : 'Inactive'}</span><div class="flex flex-wrap gap-2"><Button variant="outline" size="sm" onclick={() => updateLink(link, !link.isActive)}>{link.isActive ? 'Deactivate' : 'Activate'}</Button><Button variant="destructive" size="sm" onclick={() => openUnlinkDialog(link)}>Unlink</Button></div></li>{/each}</ul>
           </CardContent>
         </Card>
@@ -237,7 +241,7 @@
 
     <Tabs.Content value="store">
       <Card class="max-w-2xl">
-        <CardHeader><CardTitle>Store profile</CardTitle></CardHeader>
+        <CardHeader><CardTitle><h2>Store profile</h2></CardTitle></CardHeader>
         <CardContent><form onsubmit={saveProfile} class="grid gap-4"><div class="grid gap-2"><Label for="store-name">Store name</Label><Input id="store-name" bind:value={profile.storeName} required /></div><div class="grid gap-2"><Label for="receipt-footer">Receipt footer</Label><Textarea id="receipt-footer" bind:value={profile.receiptFooter} /></div><Button type="submit">Save profile</Button></form></CardContent>
       </Card>
     </Tabs.Content>
@@ -248,7 +252,7 @@
   <Dialog.Content>
     <Dialog.Header><Dialog.Title>Adjust stock for {stockToAdjust?.name}</Dialog.Title><Dialog.Description>Use a negative number to reduce stock. Every change is audited.</Dialog.Description></Dialog.Header>
     <div class="grid gap-4"><div class="grid gap-2"><Label for="stock-quantity-delta">Quantity adjustment</Label><Input id="stock-quantity-delta" type="number" step="1" bind:value={quantityDelta} aria-invalid={Boolean(error)} /></div><div class="grid gap-2"><Label for="stock-adjustment-reason">Reason</Label><Textarea id="stock-adjustment-reason" bind:value={adjustmentReason} aria-invalid={Boolean(error)} /></div>{#if error}<Alert variant="destructive">{error}</Alert>{/if}</div>
-    <Dialog.Footer><Dialog.Close>{#snippet child({ props })}<Button variant="outline" {...props}>Cancel</Button>{/snippet}</Dialog.Close><Button onclick={adjustStock}>Adjust stock</Button></Dialog.Footer>
+    <Dialog.Footer><Dialog.Close>{#snippet child({ props })}<Button variant="outline" {...props}>Cancel</Button>{/snippet}</Dialog.Close><Button disabled={adjustingStock} onclick={adjustStock}>{adjustingStock ? 'Saving…' : 'Adjust stock'}</Button></Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>
 

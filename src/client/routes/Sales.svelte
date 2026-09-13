@@ -81,7 +81,7 @@
 </script>
 
 <Card>
-  <CardHeader><CardTitle>Sales history</CardTitle></CardHeader>
+  <CardHeader><CardTitle><h1>Sales history</h1></CardTitle></CardHeader>
   <CardContent class="grid gap-4">
     {#if error}<Alert variant="destructive">{error}</Alert>{/if}
     <Table.Root>
@@ -99,7 +99,7 @@
 
 {#if selected}
   <Card class="mt-4 max-w-2xl">
-    <CardHeader><CardTitle>{selected.invoiceNumber}</CardTitle></CardHeader>
+    <CardHeader><CardTitle><h2>{selected.invoiceNumber}</h2></CardTitle></CardHeader>
     <CardContent class="grid gap-4">
       <p class="flex flex-wrap items-center gap-2"><Badge variant="secondary">{selected.paymentMethod}</Badge><strong>{rupiah(selected.totalAmount)}</strong></p>
       <ul class="divide-y">{#each selected.items as item (item.id)}<li class="flex justify-between gap-4 py-2"><span>{item.productName} ({item.sku}) × {item.quantity}</span><strong class="whitespace-nowrap">{rupiah(item.lineTotal)}</strong></li>{/each}</ul>

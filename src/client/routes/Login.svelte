@@ -35,7 +35,7 @@
 <main class="mx-auto mt-[12vh] max-w-md px-4">
   <Card>
     <CardHeader>
-      <CardTitle>Nara TelePOS</CardTitle>
+      <CardTitle><h1>Nara TelePOS</h1></CardTitle>
       <p class="text-sm text-slate-500">Sign in to start a sale or manage the store.</p>
     </CardHeader>
     <CardContent>

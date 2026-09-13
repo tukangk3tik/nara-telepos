@@ -41,7 +41,7 @@
 </script>
 
 <Card>
-  <CardHeader><CardTitle>Customer <span class="text-muted-foreground font-normal">(optional)</span></CardTitle></CardHeader>
+  <CardHeader><CardTitle><h2>Customer <span class="text-muted-foreground font-normal">(optional)</span></h2></CardTitle></CardHeader>
   <CardContent class="grid gap-4">
     <div class="grid gap-2"><Label for="customer-search">Find customer</Label><Input id="customer-search" bind:value={query} oninput={search} placeholder="Name, phone, or email" /></div>
     {#if customers.length}

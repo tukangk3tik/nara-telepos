@@ -69,14 +69,14 @@
 
 <div class="grid gap-4 lg:grid-cols-[minmax(0,.8fr)_minmax(20rem,1.2fr)]">
   <Card>
-    <CardHeader><CardTitle>New expense</CardTitle></CardHeader>
+    <CardHeader><CardTitle><h1>New expense</h1></CardTitle></CardHeader>
     <CardContent>
       <form class="grid gap-4" onsubmit={create}>
         <div class="grid gap-2">
           <Label for="expense-category">Category</Label>
-          <Select.Root bind:value={expenseCategoryId} disabled={!categories.length} name="expenseCategoryId" required>
+          <Select.Root type="single" bind:value={expenseCategoryId} items={categories.map((category) => ({ value: String(category.id), label: category.name }))} disabled={!categories.length} name="expenseCategoryId" required>
             <Select.Trigger id="expense-category" aria-label="Category" class="w-full"><Select.Value placeholder={categories.length ? 'Select category' : 'No active categories'} /></Select.Trigger>
-            <Select.Content>{#each categories as category}<Select.Item value={String(category.id)}>{category.name}</Select.Item>{/each}</Select.Content>
+            <Select.Content>{#each categories as category}<Select.Item value={String(category.id)} label={category.name} />{/each}</Select.Content>
           </Select.Root>
         </div>
         <div class="grid gap-2"><Label for="expense-amount">Amount (IDR)</Label><Input id="expense-amount" type="number" min="1" step="1" bind:value={amount} required /></div>
@@ -89,7 +89,7 @@
   </Card>
 
   <Card>
-    <CardHeader><CardTitle>Expense history</CardTitle></CardHeader>
+    <CardHeader><CardTitle><h2>Expense history</h2></CardTitle></CardHeader>
     <CardContent class="grid gap-4">
       <ul class="divide-y">{#each expenses as expense (expense.id)}
         <li class="flex flex-wrap items-center gap-3 py-3"><Button variant="outline" size="sm" onclick={() => details(expense.id)}>{expense.expenseNumber}</Button><span class="mr-auto text-muted-foreground">{expense.categoryName} · {expense.transactionDate}</span><strong class="whitespace-nowrap">{rupiah(expense.amount)}</strong></li>
