@@ -5,6 +5,7 @@ import type { DatabaseClient } from './db'
 import { DomainError } from './domain/errors'
 import { createAuthRoutes } from './routes/auth'
 import { createCustomerRoutes } from './routes/customers'
+import { createDashboardRoutes } from './routes/dashboard'
 import { createExpenseRoutes } from './routes/expenses'
 import { createProductRoutes } from './routes/products'
 import { createSalesRoutes } from './routes/sales'
@@ -41,6 +42,8 @@ export function createApp({ db, sessionSecret, appBaseUrl = 'http://localhost:30
     return c.json({ error: 'INTERNAL_ERROR' }, 500)
   })
   app.get('/api/auth/me', (c) => c.json(requireActor(c)))
+  app.use('/api/dashboard', requireRole('admin'))
+  app.route('/api/dashboard', createDashboardRoutes({ db }))
   app.use('/api/settings/*', requireRole('admin'))
   app.route('/api/products', createProductRoutes({ db }))
   app.route('/api/customers', createCustomerRoutes({ db }))
