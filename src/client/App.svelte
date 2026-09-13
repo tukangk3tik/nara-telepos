@@ -6,10 +6,12 @@
   import Sales from './routes/Sales.svelte'
   import Expenses from './routes/Expenses.svelte'
   import Settings from './routes/Settings.svelte'
+  import Dashboard from './routes/Dashboard.svelte'
   import ShoppingCart from '@lucide/svelte/icons/shopping-cart'
   import ChartNoAxesCombined from '@lucide/svelte/icons/chart-no-axes-combined'
   import ReceiptText from '@lucide/svelte/icons/receipt-text'
   import SettingsIcon from '@lucide/svelte/icons/settings'
+  import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard'
   import LogOut from '@lucide/svelte/icons/log-out'
   import { Button } from '$lib/components/ui/button/index.js'
 
@@ -64,6 +66,7 @@
         <a class="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900" class:bg-slate-200={path === '/sales' || path.startsWith('/sales/')} class:text-slate-900={path === '/sales' || path.startsWith('/sales/')} href="/sales" onclick={(event) => { event.preventDefault(); navigate('/sales') }}><ChartNoAxesCombined /> <span>Sales</span></a>
         <a class="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900" class:bg-slate-200={path === '/expenses'} class:text-slate-900={path === '/expenses'} href="/expenses" onclick={(event) => { event.preventDefault(); navigate('/expenses') }}><ReceiptText /> <span>Expenses</span></a>
         {#if actor.role === 'admin'}
+          <a class="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900" class:bg-slate-200={path === '/dashboard'} class:text-slate-900={path === '/dashboard'} href="/dashboard" onclick={(event) => { event.preventDefault(); navigate('/dashboard') }}><LayoutDashboard /> <span>Dashboard</span></a>
           <a class="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900" class:bg-slate-200={path === '/settings'} class:text-slate-900={path === '/settings'} href="/settings" onclick={(event) => { event.preventDefault(); navigate('/settings') }}><SettingsIcon /> <span>Settings</span></a>
         {/if}
       </nav>
@@ -76,6 +79,7 @@
           <a class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900" class:bg-slate-200={path === '/sales' || path.startsWith('/sales/')} class:text-slate-900={path === '/sales' || path.startsWith('/sales/')} href="/sales" onclick={(event) => { event.preventDefault(); navigate('/sales') }}><ChartNoAxesCombined /> <span>Sales</span></a>
           <a class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900" class:bg-slate-200={path === '/expenses'} class:text-slate-900={path === '/expenses'} href="/expenses" onclick={(event) => { event.preventDefault(); navigate('/expenses') }}><ReceiptText /> <span>Expenses</span></a>
           {#if actor.role === 'admin'}
+            <a class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900" class:bg-slate-200={path === '/dashboard'} class:text-slate-900={path === '/dashboard'} href="/dashboard" onclick={(event) => { event.preventDefault(); navigate('/dashboard') }}><LayoutDashboard /> <span>Dashboard</span></a>
             <a class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900" class:bg-slate-200={path === '/settings'} class:text-slate-900={path === '/settings'} href="/settings" onclick={(event) => { event.preventDefault(); navigate('/settings') }}><SettingsIcon /> <span>Settings</span></a>
           {/if}
         </nav>
@@ -88,6 +92,8 @@
           <Expenses />
         {:else if path === '/settings' && actor.role === 'admin'}
           <Settings />
+        {:else if path === '/dashboard' && actor.role === 'admin'}
+          <Dashboard />
         {:else}
           <Pos />
         {/if}

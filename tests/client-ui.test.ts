@@ -11,6 +11,14 @@ test.each(['Pos', 'Expenses', 'Settings'])('%s configures string-valued selects 
   for (const [select] of selects) expect(select).toContain('type="single"')
 })
 
+test('dashboard navigation and route are admin-only', () => {
+  const source = readFileSync(new URL('../src/client/App.svelte', import.meta.url), 'utf8')
+  expect(source).toContain("import Dashboard from './routes/Dashboard.svelte'")
+  expect(source.match(/Dashboard/g)?.length).toBeGreaterThanOrEqual(3)
+  expect(source).toContain("actor.role === 'admin'")
+  expect(source).toContain("path === '/dashboard'")
+})
+
 // Exercise the real route handlers without mounting the UI; only the API boundary is replaced.
 function settings(api: (path: string, options?: RequestInit) => Promise<unknown>) {
   const source = route('Settings')
