@@ -49,7 +49,7 @@
 </script>
 
 {#if loading}
-  <main class="centered">Loading…</main>
+  <main class="mx-auto my-[12vh] max-w-md p-6">Loading…</main>
 {:else if !actor}
   <Login onSuccess={loadActor} />
 {:else}
@@ -81,7 +81,7 @@
         </nav>
       </aside>
 
-      <main class="page min-w-0 flex-1">
+      <main class="mx-auto w-full max-w-[1200px] min-w-0 flex-1 p-4">
         {#if path === '/sales' || /^\/sales\/[1-9]\d*$/.test(path)}
           {#key path}<Sales {actor} saleId={path === '/sales' ? null : Number(path.split('/')[2])} />{/key}
         {:else if path === '/expenses'}
