@@ -8,6 +8,7 @@
     "start": "bun src/server/index.ts",
     "test": "bun test",
     "bootstrap:admin": "bun src/server/bootstrap-admin.ts",
+    "seed:demo": "bun src/server/seed-demo.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun src/server/db/migrate.ts"
   },
