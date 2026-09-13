@@ -27,7 +27,7 @@ const localDayUtcBounds = (date: string) => {
   return [start.toISOString(), end.toISOString()] as const
 }
 
-const timestamp = (value: string) => Date.parse(value.includes('T') ? value : `${value.replace(' ', 'T')}Z`)
+const utcTimestamp = (value: string) => new Date(value.includes('T') ? value : `${value.replace(' ', 'T')}Z`).toISOString()
 
 export function createDashboardRoutes({ db }: { db: DatabaseClient }) {
   const app = new Hono()
@@ -54,7 +54,7 @@ export function createDashboardRoutes({ db }: { db: DatabaseClient }) {
       amount: expenses.amount,
       occurredAt: expenses.createdAt,
     }).from(expenses).innerJoin(expenseCategories, eq(expenses.expenseCategoryId, expenseCategories.id)).all()
-      .map((expense) => ({ kind: 'expense', ...expense, cancelled: false }))
+      .map((expense) => ({ kind: 'expense', ...expense, occurredAt: utcTimestamp(expense.occurredAt), cancelled: false }))
 
     return c.json({
       date,
@@ -62,7 +62,7 @@ export function createDashboardRoutes({ db }: { db: DatabaseClient }) {
       expensesTotal,
       netProfit: salesTotal - expensesTotal,
       recentTransactions: [...recentSales, ...recentExpenses]
-        .sort((a, b) => timestamp(b.occurredAt) - timestamp(a.occurredAt)).slice(0, 8),
+        .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt)).slice(0, 8),
       lowStockProducts: db.select({ id: products.id, name: products.name, sku: products.sku, stockQuantity: products.stockQuantity })
         .from(products).where(and(eq(products.isActive, true), lte(products.stockQuantity, 5)))
         .orderBy(asc(products.stockQuantity), asc(products.name)).all(),

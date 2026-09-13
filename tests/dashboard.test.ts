@@ -127,7 +127,9 @@ test('dashboard orders ISO sales and SQLite expense timestamps chronologically',
     .where(eq(expenses.expenseNumber, 'EXP-001')).run()
 
   const body = await (await adminRequest('/api/dashboard')).json()
+  const expense = body.recentTransactions.find((entry: { reference: string }) => entry.reference === 'EXP-001')
 
   expect(body.recentTransactions.findIndex((entry: { reference: string }) => entry.reference === 'EXP-001'))
     .toBeLessThan(body.recentTransactions.findIndex((entry: { reference: string }) => entry.reference === 'INV-001'))
+  expect(expense.occurredAt).toBe(`${date}T10:00:00.000Z`)
 })
