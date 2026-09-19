@@ -130,10 +130,16 @@ test('Telegram checker sends one request while pending and reports success or fa
   await Promise.all([first, duplicate])
   expect(page.state).toMatchObject({ telegramChecking: false, message: 'Telegram connection OK', error: '' })
 
-  pending = Promise.withResolvers<unknown>()
-  const failed = page.checkTelegram()
-  pending.reject(new Error('Telegram unavailable'))
-  await failed
-  expect(requests).toHaveLength(2)
-  expect(page.state).toMatchObject({ telegramChecking: false, message: '', error: 'Telegram unavailable' })
+  for (const [code, readable] of [
+    ['TELEGRAM_UNAVAILABLE', 'Telegram is unavailable'],
+    ['TELEGRAM_NOT_CONFIGURED', 'Telegram bot is not configured'],
+    ['Unexpected failure', 'Unexpected failure'],
+  ]) {
+    pending = Promise.withResolvers<unknown>()
+    const failed = page.checkTelegram()
+    pending.reject(new Error(code))
+    await failed
+    expect(page.state).toMatchObject({ telegramChecking: false, message: '', error: readable })
+  }
+  expect(requests).toHaveLength(4)
 })

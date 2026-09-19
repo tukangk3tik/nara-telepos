@@ -23,6 +23,10 @@
   const newCustomer = () => ({ id: 0, name: '', phone: '', email: '' })
   const newCategory = () => ({ id: 0, name: '', isActive: true })
   const newUser = () => ({ name: '', email: '', password: '', role: 'cashier' as 'admin' | 'cashier' })
+  const telegramErrorMessages: Record<string, string> = {
+    TELEGRAM_UNAVAILABLE: 'Telegram is unavailable',
+    TELEGRAM_NOT_CONFIGURED: 'Telegram bot is not configured',
+  }
 
   let products: Product[] = []
   let customers: Customer[] = []
@@ -153,7 +157,7 @@
       await api<{ ok: true }>('/api/settings/telegram/check', { method: 'POST' })
       message = 'Telegram connection OK'
     } catch (cause) {
-      error = cause instanceof Error ? cause.message : 'Could not check Telegram connection'
+      error = cause instanceof Error ? telegramErrorMessages[cause.message] ?? cause.message : 'Could not check Telegram connection'
     } finally {
       telegramChecking = false
     }
