@@ -7,10 +7,19 @@ import { createExpenseCategory, listExpenseCategories, updateExpenseCategory } f
 import { createUser, linkTelegramStaff, listTelegramStaff, listUsers, setTelegramStaffActive, unlinkTelegramStaff, updateUserRole } from '../services/staff'
 import { DomainError } from '../domain/errors'
 
-export function createSettingsRoutes({ db }: { db: DatabaseClient }) {
+export function createSettingsRoutes({ db, telegramChecker }: { db: DatabaseClient; telegramChecker?: () => Promise<void> }) {
   const app = new Hono()
 
   app.use('*', requireRole('admin'))
+  app.post('/telegram/check', async (c) => {
+    if (!telegramChecker) return c.json({ error: 'TELEGRAM_NOT_CONFIGURED' }, 503)
+    try {
+      await telegramChecker()
+      return c.json({ ok: true })
+    } catch {
+      return c.json({ error: 'TELEGRAM_UNAVAILABLE' }, 502)
+    }
+  })
   app.get('/profile', () => Response.json(db.select().from(appSettings).where(eq(appSettings.id, 1)).get() ?? { id: 1, storeName: '', receiptFooter: '' }))
   app.put('/profile', async (c) => {
     const body = await c.req.json().catch(() => ({}))

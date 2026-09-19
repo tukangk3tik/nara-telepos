@@ -37,8 +37,9 @@ function settings(api: (path: string, options?: RequestInit) => Promise<unknown>
   return new Function('api', 'onMount', 'stockAdjustment', `${new Bun.Transpiler({ loader: 'ts' }).transformSync(script)}
     return {
       openStockDialog, setStockDialogOpen, adjustStock,
+      checkTelegram,
       input(quantity, reason) { quantityDelta = quantity; adjustmentReason = reason },
-      get state() { return { stockToAdjust, quantityDelta, adjustmentReason, stockDialogOpen, error, message } }
+      get state() { return { stockToAdjust, quantityDelta, adjustmentReason, stockDialogOpen, telegramChecking, error, message } }
     }
   `)(api, () => {}, stockAdjustment)
 }
@@ -105,4 +106,40 @@ test('closing a pending stock dialog cannot replace its target until the request
   await request
   page.openStockDialog({ ...product, id: 8 })
   expect(page.state).toMatchObject({ stockDialogOpen: true, stockToAdjust: { id: 8 }, error: '' })
+})
+
+test('Telegram checker sends one request while pending and reports success or failure', async () => {
+  const source = route('Settings')
+  expect(source).toContain("api<{ ok: true }>('/api/settings/telegram/check', { method: 'POST' })")
+  expect(source).toContain("telegramChecking ? 'Checking…' : 'Check connection'")
+  expect(source).toContain("message = 'Telegram connection OK'")
+
+  let pending = Promise.withResolvers<unknown>()
+  const requests: Array<{ path: string; options: RequestInit }> = []
+  const page = settings(async (path, options) => {
+    if (!options) return []
+    requests.push({ path, options })
+    return pending.promise
+  })
+
+  const first = page.checkTelegram()
+  const duplicate = page.checkTelegram()
+  expect(requests).toEqual([{ path: '/api/settings/telegram/check', options: { method: 'POST' } }])
+  expect(page.state.telegramChecking).toBe(true)
+  pending.resolve({ ok: true })
+  await Promise.all([first, duplicate])
+  expect(page.state).toMatchObject({ telegramChecking: false, message: 'Telegram connection OK', error: '' })
+
+  for (const [code, readable] of [
+    ['TELEGRAM_UNAVAILABLE', 'Telegram is unavailable'],
+    ['TELEGRAM_NOT_CONFIGURED', 'Telegram bot is not configured'],
+    ['Unexpected failure', 'Unexpected failure'],
+  ]) {
+    pending = Promise.withResolvers<unknown>()
+    const failed = page.checkTelegram()
+    pending.reject(new Error(code))
+    await failed
+    expect(page.state).toMatchObject({ telegramChecking: false, message: '', error: readable })
+  }
+  expect(requests).toHaveLength(4)
 })

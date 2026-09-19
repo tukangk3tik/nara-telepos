@@ -11,13 +11,13 @@ import { createProductRoutes } from './routes/products'
 import { createSalesRoutes } from './routes/sales'
 import { createSettingsRoutes } from './routes/settings'
 import { createTelegramRoutes } from './routes/telegram'
-import { createTelegramClient, type TelegramClient } from './telegram/client'
+import { checkTelegramBot, createTelegramClient, type TelegramClient } from './telegram/client'
 import type { TelegramDispatcher } from './telegram/conversations'
 
-export type AppOptions = { db: DatabaseClient; sessionSecret: string; telegramClient?: TelegramClient; telegramDispatcher?: TelegramDispatcher }
+export type AppOptions = { db: DatabaseClient; sessionSecret: string; telegramClient?: TelegramClient; telegramDispatcher?: TelegramDispatcher; telegramChecker?: () => Promise<void> }
   & Partial<Pick<AppConfig, 'appBaseUrl' | 'telegramEnabled' | 'telegramBotToken' | 'telegramWebhookSecret'>>
 
-export function createApp({ db, sessionSecret, appBaseUrl = 'http://localhost:3000', telegramEnabled, telegramBotToken, telegramWebhookSecret, telegramClient, telegramDispatcher }: AppOptions) {
+export function createApp({ db, sessionSecret, appBaseUrl = 'http://localhost:3000', telegramEnabled, telegramBotToken, telegramWebhookSecret, telegramClient, telegramDispatcher, telegramChecker }: AppOptions) {
   const app = new Hono()
 
   if (telegramEnabled) {
@@ -49,7 +49,10 @@ export function createApp({ db, sessionSecret, appBaseUrl = 'http://localhost:30
   app.route('/api/customers', createCustomerRoutes({ db }))
   app.route('/api/sales', createSalesRoutes({ db }))
   app.route('/api/expenses', createExpenseRoutes({ db }))
-  app.route('/api/settings', createSettingsRoutes({ db }))
+  app.route('/api/settings', createSettingsRoutes({
+    db,
+    telegramChecker: telegramChecker ?? (telegramBotToken?.trim() ? () => checkTelegramBot(telegramBotToken) : undefined),
+  }))
 
   return app
 }

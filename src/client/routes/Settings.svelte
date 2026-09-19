@@ -23,6 +23,10 @@
   const newCustomer = () => ({ id: 0, name: '', phone: '', email: '' })
   const newCategory = () => ({ id: 0, name: '', isActive: true })
   const newUser = () => ({ name: '', email: '', password: '', role: 'cashier' as 'admin' | 'cashier' })
+  const telegramErrorMessages: Record<string, string> = {
+    TELEGRAM_UNAVAILABLE: 'Telegram is unavailable',
+    TELEGRAM_NOT_CONFIGURED: 'Telegram bot is not configured',
+  }
 
   let products: Product[] = []
   let customers: Customer[] = []
@@ -43,6 +47,7 @@
   let adjustingStock = false
   let linkToRemove: TelegramLink | null = null
   let unlinkDialogOpen = false
+  let telegramChecking = false
   let error = ''
   let message = ''
 
@@ -143,6 +148,21 @@
     catch (cause) { error = cause instanceof Error ? cause.message : 'Could not update Telegram link' }
   }
 
+  async function checkTelegram() {
+    if (telegramChecking) return
+    telegramChecking = true
+    error = ''
+    message = ''
+    try {
+      await api<{ ok: true }>('/api/settings/telegram/check', { method: 'POST' })
+      message = 'Telegram connection OK'
+    } catch (cause) {
+      error = cause instanceof Error ? telegramErrorMessages[cause.message] ?? cause.message : 'Could not check Telegram connection'
+    } finally {
+      telegramChecking = false
+    }
+  }
+
   function openUnlinkDialog(link: TelegramLink) {
     error = ''
     linkToRemove = link
@@ -232,6 +252,7 @@
         <Card>
           <CardHeader><CardTitle><h2>Telegram staff links</h2></CardTitle></CardHeader>
           <CardContent class="grid gap-4">
+            <Button variant="outline" disabled={telegramChecking} onclick={checkTelegram}>{telegramChecking ? 'Checking…' : 'Check connection'}</Button>
             <form onsubmit={linkTelegram} class="grid gap-4"><div class="grid gap-2"><Label for="telegram-user">User</Label><Select.Root type="single" bind:value={linkedUserId} items={users.map((user) => ({ value: String(user.id), label: user.name }))} name="userId" required><Select.Trigger id="telegram-user" aria-label="User" class="w-full"><Select.Value placeholder="Select user" /></Select.Trigger><Select.Content>{#each users as user}<Select.Item value={String(user.id)} label={user.name} />{/each}</Select.Content></Select.Root></div><div class="grid gap-2"><Label for="telegram-user-id">Telegram user ID</Label><Input id="telegram-user-id" bind:value={telegramUserId} inputmode="numeric" required /></div><Button type="submit">Link Telegram user</Button></form>
             <ul class="divide-y">{#each telegramLinks as link (link.id)}<li class="grid gap-2 py-3"><span>{link.name} · {link.telegramUserId} · {link.isActive ? 'Active' : 'Inactive'}</span><div class="flex flex-wrap gap-2"><Button variant="outline" size="sm" onclick={() => updateLink(link, !link.isActive)}>{link.isActive ? 'Deactivate' : 'Activate'}</Button><Button variant="destructive" size="sm" onclick={() => openUnlinkDialog(link)}>Unlink</Button></div></li>{/each}</ul>
           </CardContent>
