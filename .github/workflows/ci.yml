@@ -51,7 +51,11 @@ jobs:
             sha="$1"
             app_dir="$2"
             service_name="$3"
+            mkdir -p "$app_dir"
             cd "$app_dir"
+            if [ ! -d .git ]; then
+              git clone https://github.com/tukangk3tik/nara-telepos.git .
+            fi
             git fetch --prune origin main
             git cat-file -e "$sha^{commit}"
             git merge-base --is-ancestor "$sha" origin/main
@@ -59,6 +63,7 @@ jobs:
             bun install --frozen-lockfile
             bun run build
             bun run db:migrate
+            sudo systemctl daemon-reload
             sudo systemctl restart "$service_name"
           DEPLOY
 
@@ -89,12 +94,17 @@ jobs:
             sha="$1"
             app_dir="$2"
             service_name="$3"
+            mkdir -p "$app_dir"
             cd "$app_dir"
+            if [ ! -d .git ]; then
+              git clone https://github.com/tukangk3tik/nara-telepos.git .
+            fi
             git fetch --force origin "$sha"
             git cat-file -e "$sha^{commit}"
             git checkout --detach "$sha"
             bun install --frozen-lockfile
             bun run build
             bun run db:migrate
+            sudo systemctl daemon-reload
             sudo systemctl restart "$service_name"
           DEPLOY
