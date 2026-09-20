@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD
 
 on:
   push:
@@ -21,3 +21,80 @@ jobs:
       - run: bun run db:migrate
         env:
           DATABASE_URL: ${{ runner.temp }}/telepos.sqlite
+
+  deploy-dev:
+    if: github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    environment: development
+    concurrency:
+      group: deploy-development
+      cancel-in-progress: false
+    steps:
+      - name: Deploy main to development
+        env:
+          DEPLOY_SHA: ${{ github.sha }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          APP_DIR: ${{ vars.APP_DIR }}
+          SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+        run: |
+          : "${SERVER_HOST:?Missing SERVER_HOST}" "${SERVER_USER:?Missing SERVER_USER}" "${SSH_PRIVATE_KEY:?Missing SSH_PRIVATE_KEY}" "${APP_DIR:?Missing APP_DIR}" "${SERVICE_NAME:?Missing SERVICE_NAME}"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # ponytail: host-key verification disabled at user request; restore SSH_KNOWN_HOSTS to prevent MITM.
+          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/deploy_key "$SERVER_USER@$SERVER_HOST" "bash -se -- $(printf '%q' "$DEPLOY_SHA") $(printf '%q' "$APP_DIR") $(printf '%q' "$SERVICE_NAME")" <<'DEPLOY'
+            set -euo pipefail
+            sha="$1"
+            app_dir="$2"
+            service_name="$3"
+            cd "$app_dir"
+            git fetch --prune origin main
+            git cat-file -e "$sha^{commit}"
+            git merge-base --is-ancestor "$sha" origin/main
+            git reset --hard "$sha"
+            bun install --frozen-lockfile
+            bun run build
+            bun run db:migrate
+            sudo systemctl restart "$service_name"
+          DEPLOY
+
+  deploy-prod:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - name: Deploy pushed tag to production
+        env:
+          DEPLOY_SHA: ${{ github.sha }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          APP_DIR: ${{ vars.APP_DIR }}
+          SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+        run: |
+          : "${SERVER_HOST:?Missing SERVER_HOST}" "${SERVER_USER:?Missing SERVER_USER}" "${SSH_PRIVATE_KEY:?Missing SSH_PRIVATE_KEY}" "${APP_DIR:?Missing APP_DIR}" "${SERVICE_NAME:?Missing SERVICE_NAME}"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # ponytail: host-key verification disabled at user request; restore SSH_KNOWN_HOSTS to prevent MITM.
+          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/deploy_key "$SERVER_USER@$SERVER_HOST" "bash -se -- $(printf '%q' "$DEPLOY_SHA") $(printf '%q' "$APP_DIR") $(printf '%q' "$SERVICE_NAME")" <<'DEPLOY'
+            set -euo pipefail
+            sha="$1"
+            app_dir="$2"
+            service_name="$3"
+            cd "$app_dir"
+            git fetch --force origin "$sha"
+            git cat-file -e "$sha^{commit}"
+            git checkout --detach "$sha"
+            bun install --frozen-lockfile
+            bun run build
+            bun run db:migrate
+            sudo systemctl restart "$service_name"
+          DEPLOY
