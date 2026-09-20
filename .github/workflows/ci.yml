@@ -60,6 +60,7 @@ jobs:
             git cat-file -e "$sha^{commit}"
             git merge-base --is-ancestor "$sha" origin/main
             git reset --hard "$sha"
+            source /home/ubuntu/.bashrc
             bun install --frozen-lockfile
             bun run build
             bun run db:migrate
