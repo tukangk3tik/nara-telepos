@@ -60,7 +60,8 @@ jobs:
             git cat-file -e "$sha^{commit}"
             git merge-base --is-ancestor "$sha" origin/main
             git reset --hard "$sha"
-            source /home/ubuntu/.bashrc
+            export BUN_INSTALL="$HOME/.bun"
+            export PATH="$BUN_INSTALL/bin:$PATH"
             bun install --frozen-lockfile
             bun run build
             bun run db:migrate
@@ -103,6 +104,8 @@ jobs:
             git fetch --force origin "$sha"
             git cat-file -e "$sha^{commit}"
             git checkout --detach "$sha"
+            export BUN_INSTALL="$HOME/.bun"
+            export PATH="$BUN_INSTALL/bin:$PATH"
             bun install --frozen-lockfile
             bun run build
             bun run db:migrate
