@@ -65,7 +65,27 @@ jobs:
             bun install --frozen-lockfile
             bun run build
             bun run db:migrate
+            sudo tee "/etc/systemd/system/$service_name" >/dev/null <<SERVICE
+            [Unit]
+            Description=Nara TelePOS
+            After=network.target
+
+            [Service]
+            Type=simple
+            User=$USER
+            WorkingDirectory=$app_dir
+            EnvironmentFile=$app_dir/.env
+            Environment=BUN_INSTALL=$HOME/.bun
+            Environment=PATH=$HOME/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+            ExecStart=$HOME/.bun/bin/bun run start
+            Restart=always
+            RestartSec=5
+
+            [Install]
+            WantedBy=multi-user.target
+          SERVICE
             sudo systemctl daemon-reload
+            sudo systemctl enable "$service_name"
             sudo systemctl restart "$service_name"
           DEPLOY
 
@@ -109,6 +129,26 @@ jobs:
             bun install --frozen-lockfile
             bun run build
             bun run db:migrate
+            sudo tee "/etc/systemd/system/$service_name" >/dev/null <<SERVICE
+            [Unit]
+            Description=Nara TelePOS
+            After=network.target
+
+            [Service]
+            Type=simple
+            User=$USER
+            WorkingDirectory=$app_dir
+            EnvironmentFile=$app_dir/.env
+            Environment=BUN_INSTALL=$HOME/.bun
+            Environment=PATH=$HOME/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+            ExecStart=$HOME/.bun/bin/bun run start
+            Restart=always
+            RestartSec=5
+
+            [Install]
+            WantedBy=multi-user.target
+          SERVICE
             sudo systemctl daemon-reload
+            sudo systemctl enable "$service_name"
             sudo systemctl restart "$service_name"
           DEPLOY
