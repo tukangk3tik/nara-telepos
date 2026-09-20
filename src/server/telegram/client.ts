@@ -4,6 +4,17 @@ export type TelegramClient = {
   sendMessage(chatId: string, text: string, replyMarkup?: InlineKeyboardMarkup): Promise<void>
 }
 
+export async function checkTelegramBot(token: string, fetcher: typeof fetch = fetch): Promise<void> {
+  try {
+    const response = await fetcher(`https://api.telegram.org/bot${token}/getMe`, {
+      signal: AbortSignal.timeout(10_000),
+    })
+    if (!response.ok || (await response.json() as { ok?: unknown } | null)?.ok !== true) throw new Error()
+  } catch {
+    throw new Error('Telegram check failed')
+  }
+}
+
 export function createTelegramClient(
   token: string,
   fetcher: (url: string, init: RequestInit) => Promise<Response> = fetch,
