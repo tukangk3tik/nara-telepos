@@ -26,7 +26,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     needs: test
     runs-on: ubuntu-latest
-    environment: development
+    environment: dev
     concurrency:
       group: deploy-development
       cancel-in-progress: false
