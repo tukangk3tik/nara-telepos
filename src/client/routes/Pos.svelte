@@ -11,6 +11,7 @@
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
   import * as Select from '$lib/components/ui/select/index.js'
+  import * as Table from '$lib/components/ui/table/index.js'
 
   type Product = Omit<CartLine, 'quantity'> & { sku: string; barcode: string | null }
   type Customer = { id: number; name: string; phone: string | null; email: string | null }
@@ -85,16 +86,12 @@
         <Label for="product-search">Search products</Label>
         <Input id="product-search" bind:value={query} oninput={search} placeholder="Name, SKU, or barcode" />
       </div>
-      <ul class="divide-y">
-        {#each products as product (product.id)}
-          <li class="flex flex-wrap items-center gap-3 py-3">
-            <div class="mr-auto grid gap-1"><strong>{product.name}</strong><span class="text-muted-foreground text-sm">{product.sku}</span></div>
-            <Badge variant={product.stockQuantity ? 'secondary' : 'destructive'}>{product.stockQuantity} in stock</Badge>
-            <strong class="whitespace-nowrap">{rupiah(product.salePrice)}</strong>
-            <Button disabled={!product.stockQuantity} onclick={() => add(product)}>Add</Button>
-          </li>
-        {/each}
-      </ul>
+      <Table.Root>
+        <Table.Header><Table.Row><Table.Head>Product</Table.Head><Table.Head>Stock</Table.Head><Table.Head class="text-right">Price</Table.Head><Table.Head><span class="sr-only">Actions</span></Table.Head></Table.Row></Table.Header>
+        <Table.Body>{#each products as product (product.id)}
+          <Table.Row><Table.Cell class="whitespace-normal"><div class="grid gap-1"><strong>{product.name}</strong><span class="text-muted-foreground text-sm">{product.sku}</span></div></Table.Cell><Table.Cell><Badge variant={product.stockQuantity ? 'secondary' : 'destructive'}>{product.stockQuantity} in stock</Badge></Table.Cell><Table.Cell class="text-right font-medium">{rupiah(product.salePrice)}</Table.Cell><Table.Cell><Button disabled={!product.stockQuantity} onclick={() => add(product)}>Add</Button></Table.Cell></Table.Row>
+        {/each}</Table.Body>
+      </Table.Root>
     </CardContent>
   </Card>
 
@@ -144,7 +141,10 @@
     <CardHeader><CardTitle><h2>Receipt</h2></CardTitle></CardHeader>
     <CardContent class="grid gap-4">
       <p class="flex flex-wrap items-center gap-2"><strong>{receipt.invoiceNumber}</strong><Badge variant="secondary">{receipt.paymentMethod}</Badge></p>
-      <ul class="divide-y">{#each receipt.lines as line}<li class="flex justify-between gap-4 py-2"><span>{line.productName} × {line.quantity}</span><strong class="whitespace-nowrap">{rupiah(line.lineTotal)}</strong></li>{/each}</ul>
+      <Table.Root>
+        <Table.Header><Table.Row><Table.Head>Product</Table.Head><Table.Head class="text-right">Quantity</Table.Head><Table.Head class="text-right">Total</Table.Head></Table.Row></Table.Header>
+        <Table.Body>{#each receipt.lines as line}<Table.Row><Table.Cell class="font-medium whitespace-normal">{line.productName}</Table.Cell><Table.Cell class="text-right">{line.quantity}</Table.Cell><Table.Cell class="text-right font-medium">{rupiah(line.lineTotal)}</Table.Cell></Table.Row>{/each}</Table.Body>
+      </Table.Root>
       <p class="flex justify-between border-t-2 pt-3">Total <strong>{rupiah(receipt.totalAmount)}</strong></p>
     </CardContent>
   </Card>

@@ -1,4 +1,5 @@
 import { expect, test } from 'bun:test'
+import { readFileSync } from 'node:fs'
 import { createApp } from '../src/server/app'
 import { users } from '../src/server/db/schema'
 import { createServerApp } from '../src/server/index'
@@ -21,4 +22,11 @@ test('serves the SPA fallback and health endpoint without swallowing API 404s', 
   expect((await app.request('/sales/1')).headers.get('content-type')).toContain('text/html')
   expect((await app.request('/api/sales/1')).status).toBe(401)
   expect((await app.request('/api/missing', { headers: { cookie: login.headers.get('set-cookie')! } })).status).toBe(404)
+})
+
+test('prints the app and API URLs after the server starts', () => {
+  const source = readFileSync(new URL('../src/server/index.ts', import.meta.url), 'utf8')
+  expect(source).toContain('const server = Bun.serve')
+  expect(source).toContain('App: http://localhost:${server.port}')
+  expect(source).toContain('API: http://localhost:${server.port}/api')
 })

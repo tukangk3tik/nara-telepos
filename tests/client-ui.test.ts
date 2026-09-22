@@ -28,6 +28,18 @@ test('admins open on dashboard and see it as the first menu item', () => {
   expect(desktopNav.indexOf("path === '/dashboard'")).toBeLessThan(desktopNav.indexOf("path === '/pos'"))
 })
 
+test.each([
+  ['Dashboard', 2],
+  ['Expenses', 1],
+  ['Pos', 2],
+  ['Sales', 2],
+  ['Settings', 5],
+])('%s renders its record lists with Table primitives', (name, tables) => {
+  const source = route(name)
+  expect(source).toContain("$lib/components/ui/table/index.js")
+  expect(source.match(/<Table\.Root\b/g)).toHaveLength(tables)
+})
+
 // Exercise the real route handlers without mounting the UI; only the API boundary is replaced.
 function settings(api: (path: string, options?: RequestInit) => Promise<unknown>) {
   const source = route('Settings')

@@ -8,6 +8,7 @@
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
   import * as Select from '$lib/components/ui/select/index.js'
+  import * as Table from '$lib/components/ui/table/index.js'
   import { Textarea } from '$lib/components/ui/textarea/index.js'
 
   type Category = { id: number; name: string }
@@ -91,9 +92,12 @@
   <Card>
     <CardHeader><CardTitle><h2>Expense history</h2></CardTitle></CardHeader>
     <CardContent class="grid gap-4">
-      <ul class="divide-y">{#each expenses as expense (expense.id)}
-        <li class="flex flex-wrap items-center gap-3 py-3"><Button variant="outline" size="sm" onclick={() => details(expense.id)}>{expense.expenseNumber}</Button><span class="mr-auto text-muted-foreground">{expense.categoryName} · {expense.transactionDate}</span><strong class="whitespace-nowrap">{rupiah(expense.amount)}</strong></li>
-      {/each}</ul>
+      <Table.Root>
+        <Table.Header><Table.Row><Table.Head>Expense</Table.Head><Table.Head>Category</Table.Head><Table.Head>Date</Table.Head><Table.Head class="text-right">Amount</Table.Head></Table.Row></Table.Header>
+        <Table.Body>{#each expenses as expense (expense.id)}
+          <Table.Row><Table.Cell><Button variant="outline" size="sm" onclick={() => details(expense.id)}>{expense.expenseNumber}</Button></Table.Cell><Table.Cell class="whitespace-normal">{expense.categoryName}</Table.Cell><Table.Cell>{expense.transactionDate}</Table.Cell><Table.Cell class="text-right font-medium">{rupiah(expense.amount)}</Table.Cell></Table.Row>
+        {/each}</Table.Body>
+      </Table.Root>
       {#if selected}<article class="grid gap-2 rounded-lg border p-4"><div class="flex flex-wrap items-center gap-2"><h2 class="font-medium">{selected.expenseNumber}</h2><Badge variant="secondary">{selected.categoryName}</Badge><strong>{rupiah(selected.amount)}</strong></div><p class="text-muted-foreground">{selected.transactionDate}</p>{#if selected.notes}<p>{selected.notes}</p>{/if}</article>{/if}
     </CardContent>
   </Card>
