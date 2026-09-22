@@ -31,13 +31,13 @@
 </script>
 
 <div class="grid gap-4">
+  <div><h1 class="text-3xl font-semibold tracking-tight">Dashboard</h1>{#if summary}<p class="text-sm text-muted-foreground">Today at a glance · {summary.date}</p>{/if}</div>
+
   {#if error}
     <Alert variant="destructive" role="alert">{error}</Alert>
   {:else if !summary}
     <p>Loading dashboard…</p>
   {:else}
-    <div><h1 class="text-3xl font-semibold tracking-tight">Dashboard</h1><p class="text-sm text-muted-foreground">Today at a glance · {summary.date}</p></div>
-
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <Card><CardHeader><CardTitle>Sales</CardTitle></CardHeader><CardContent class="text-2xl font-bold">{rupiah(summary.salesTotal)}</CardContent></Card>
       <Card><CardHeader><CardTitle>Expenses</CardTitle></CardHeader><CardContent class="text-2xl font-bold">{rupiah(summary.expensesTotal)}</CardContent></Card>
