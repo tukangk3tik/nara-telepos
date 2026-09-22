@@ -69,9 +69,12 @@
       <CardHeader><CardTitle>Low stock</CardTitle></CardHeader>
       <CardContent>
         {#if summary.lowStockProducts.length}
-          <ul class="divide-y">{#each summary.lowStockProducts as product (product.id)}
-            <li class="flex items-center gap-3 py-3"><span class="mr-auto"><strong>{product.name}</strong> <span class="text-sm text-muted-foreground">({product.sku})</span></span><Badge variant={product.stockQuantity === 0 ? 'destructive' : 'secondary'}>{product.stockQuantity} in stock</Badge></li>
-          {/each}</ul>
+          <Table.Root>
+            <Table.Header><Table.Row><Table.Head>Product</Table.Head><Table.Head>SKU</Table.Head><Table.Head class="text-right">Stock</Table.Head></Table.Row></Table.Header>
+            <Table.Body>{#each summary.lowStockProducts as product (product.id)}
+              <Table.Row><Table.Cell class="font-medium whitespace-normal">{product.name}</Table.Cell><Table.Cell>{product.sku}</Table.Cell><Table.Cell class="text-right"><Badge variant={product.stockQuantity === 0 ? 'destructive' : 'secondary'}>{product.stockQuantity}</Badge></Table.Cell></Table.Row>
+            {/each}</Table.Body>
+          </Table.Root>
         {:else}
           <p class="text-sm text-muted-foreground">No low-stock products.</p>
         {/if}

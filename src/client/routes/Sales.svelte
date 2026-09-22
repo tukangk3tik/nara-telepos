@@ -102,7 +102,10 @@
     <CardHeader><CardTitle><h2>{selected.invoiceNumber}</h2></CardTitle></CardHeader>
     <CardContent class="grid gap-4">
       <p class="flex flex-wrap items-center gap-2"><Badge variant="secondary">{selected.paymentMethod}</Badge><strong>{rupiah(selected.totalAmount)}</strong></p>
-      <ul class="divide-y">{#each selected.items as item (item.id)}<li class="flex justify-between gap-4 py-2"><span>{item.productName} ({item.sku}) × {item.quantity}</span><strong class="whitespace-nowrap">{rupiah(item.lineTotal)}</strong></li>{/each}</ul>
+      <Table.Root>
+        <Table.Header><Table.Row><Table.Head>Product</Table.Head><Table.Head>SKU</Table.Head><Table.Head class="text-right">Quantity</Table.Head><Table.Head class="text-right">Total</Table.Head></Table.Row></Table.Header>
+        <Table.Body>{#each selected.items as item (item.id)}<Table.Row><Table.Cell class="font-medium whitespace-normal">{item.productName}</Table.Cell><Table.Cell>{item.sku}</Table.Cell><Table.Cell class="text-right">{item.quantity}</Table.Cell><Table.Cell class="text-right font-medium">{rupiah(item.lineTotal)}</Table.Cell></Table.Row>{/each}</Table.Body>
+      </Table.Root>
       {#if selected.cancelledAt}<Alert variant="destructive">Cancelled: {selected.cancellationReason}</Alert>{/if}
     </CardContent>
   </Card>

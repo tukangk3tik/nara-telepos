@@ -1,5 +1,7 @@
 import { expect, test } from 'bun:test'
+import { readFileSync } from 'node:fs'
 import { createBootstrapAdmin, hashPassword, verifyPassword } from '../src/server/auth'
+import { bootstrapCredentials } from '../src/server/bootstrap-admin'
 import { createApp } from '../src/server/app'
 import { users } from '../src/server/db/schema'
 import { createTestDatabase } from './helpers/database'
@@ -47,6 +49,24 @@ test('bootstrap does not reopen on an existing database without an administrator
   db.insert(users).values({ name: 'Cashier', email: 'cashier@test', passwordHash: 'unused', role: 'cashier' }).run()
   await expect(createBootstrapAdmin(db, { name: 'Untrusted recovery', email: 'new@test', password })).rejects.toThrow('An administrator already exists')
   expect(db.select().from(users).all()).toHaveLength(1)
+})
+
+test('bootstrap prompts for credentials only when no arguments are supplied', async () => {
+  const prompts: string[] = []
+  const credentials = await bootstrapCredentials([], (label) => {
+    prompts.push(label)
+    return { 'Name: ': 'Initial Admin', 'Email: ': 'admin@example.test' }[label]!
+  }, () => password)
+
+  expect(prompts).toEqual(['Name: ', 'Email: '])
+  expect(credentials).toEqual({ name: 'Initial Admin', email: 'admin@example.test', password })
+  expect(await bootstrapCredentials(['Owner', 'owner@example.test', 'from-script'], () => { throw new Error('should not prompt') })).toEqual({ name: 'Owner', email: 'owner@example.test', password: 'from-script' })
+})
+
+test('bootstrap reads an interactive password without terminal echo', () => {
+  const source = readFileSync(new URL('../src/server/bootstrap-admin.ts', import.meta.url), 'utf8')
+  expect(source).toContain('stty -echo')
+  expect(source).not.toContain("prompt('Password: ')")
 })
 
 test('logs in with a valid password and issues an HTTP-only localhost session cookie', async () => {

@@ -25,5 +25,7 @@ if (import.meta.main) {
     telegramBotToken: config.telegramBotToken,
     telegramWebhookSecret: config.telegramWebhookSecret,
   }))
-  Bun.serve({ fetch: app.fetch, port: Number(process.env.PORT ?? 3000) })
+  const server = Bun.serve({ fetch: app.fetch, port: Number(process.env.PORT ?? 3000) })
+  console.log(`App: http://localhost:${server.port}`)
+  console.log(`API: http://localhost:${server.port}/api`)
 }

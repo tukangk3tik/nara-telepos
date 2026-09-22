@@ -9,6 +9,7 @@
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
   import * as Select from '$lib/components/ui/select/index.js'
+  import * as Table from '$lib/components/ui/table/index.js'
   import * as Tabs from '$lib/components/ui/tabs/index.js'
   import { Textarea } from '$lib/components/ui/textarea/index.js'
 
@@ -217,7 +218,7 @@
               <Label class="flex items-center gap-2"><input type="checkbox" bind:checked={productForm.isActive} /> Active</Label>
               <div class="flex flex-wrap gap-2"><Button type="submit">{productForm.id ? 'Update product' : 'Add product'}</Button>{#if productForm.id}<Button variant="outline" type="button" onclick={() => productForm = newProduct()}>New</Button>{/if}</div>
             </form>
-            <ul class="divide-y">{#each products as product (product.id)}<li class="grid gap-2 py-3"><span>{product.name} · {product.sku} · {product.stockQuantity}</span><div class="flex flex-wrap gap-2"><Button variant="outline" size="sm" onclick={() => productForm = { ...product, barcode: product.barcode ?? '' }}>Edit</Button><Button variant="outline" size="sm" onclick={() => openStockDialog(product)}>Adjust stock</Button></div></li>{/each}</ul>
+            <Table.Root><Table.Header><Table.Row><Table.Head>Product</Table.Head><Table.Head>SKU</Table.Head><Table.Head class="text-right">Stock</Table.Head><Table.Head><span class="sr-only">Actions</span></Table.Head></Table.Row></Table.Header><Table.Body>{#each products as product (product.id)}<Table.Row><Table.Cell class="font-medium whitespace-normal">{product.name}</Table.Cell><Table.Cell>{product.sku}</Table.Cell><Table.Cell class="text-right">{product.stockQuantity}</Table.Cell><Table.Cell><div class="flex gap-2"><Button variant="outline" size="sm" onclick={() => productForm = { ...product, barcode: product.barcode ?? '' }}>Edit</Button><Button variant="outline" size="sm" onclick={() => openStockDialog(product)}>Adjust stock</Button></div></Table.Cell></Table.Row>{/each}</Table.Body></Table.Root>
           </CardContent>
         </Card>
 
@@ -225,7 +226,7 @@
           <CardHeader><CardTitle><h2>Customers</h2></CardTitle></CardHeader>
           <CardContent class="grid gap-4">
             <form onsubmit={saveCustomer} class="grid gap-4"><div class="grid gap-2"><Label for="customer-name">Name</Label><Input id="customer-name" bind:value={customerForm.name} required /></div><div class="grid gap-2"><Label for="customer-phone">Phone</Label><Input id="customer-phone" bind:value={customerForm.phone} /></div><div class="grid gap-2"><Label for="customer-email">Email</Label><Input id="customer-email" type="email" bind:value={customerForm.email} /></div><div class="flex flex-wrap gap-2"><Button type="submit">{customerForm.id ? 'Update customer' : 'Add customer'}</Button>{#if customerForm.id}<Button variant="outline" type="button" onclick={() => customerForm = newCustomer()}>New</Button>{/if}</div></form>
-            <ul class="divide-y">{#each customers as customer (customer.id)}<li class="flex flex-wrap items-center justify-between gap-2 py-3"><span>{customer.name}{customer.phone ? ` · ${customer.phone}` : ''}</span><Button variant="outline" size="sm" onclick={() => customerForm = { ...customer, phone: customer.phone ?? '', email: customer.email ?? '' }}>Edit</Button></li>{/each}</ul>
+            <Table.Root><Table.Header><Table.Row><Table.Head>Customer</Table.Head><Table.Head>Contact</Table.Head><Table.Head><span class="sr-only">Actions</span></Table.Head></Table.Row></Table.Header><Table.Body>{#each customers as customer (customer.id)}<Table.Row><Table.Cell class="font-medium whitespace-normal">{customer.name}</Table.Cell><Table.Cell class="whitespace-normal">{customer.phone ?? '—'}</Table.Cell><Table.Cell><Button variant="outline" size="sm" onclick={() => customerForm = { ...customer, phone: customer.phone ?? '', email: customer.email ?? '' }}>Edit</Button></Table.Cell></Table.Row>{/each}</Table.Body></Table.Root>
           </CardContent>
         </Card>
 
@@ -233,7 +234,7 @@
           <CardHeader><CardTitle><h2>Expense categories</h2></CardTitle></CardHeader>
           <CardContent class="grid gap-4">
             <form onsubmit={saveCategory} class="grid gap-4"><div class="grid gap-2"><Label for="category-name">Name</Label><Input id="category-name" bind:value={categoryForm.name} required /></div><Label class="flex items-center gap-2"><input type="checkbox" bind:checked={categoryForm.isActive} /> Active</Label><div class="flex flex-wrap gap-2"><Button type="submit">{categoryForm.id ? 'Update category' : 'Add category'}</Button>{#if categoryForm.id}<Button variant="outline" type="button" onclick={() => categoryForm = newCategory()}>New</Button>{/if}</div></form>
-            <ul class="divide-y">{#each categories as category (category.id)}<li class="flex flex-wrap items-center justify-between gap-2 py-3"><span>{category.name} · {category.isActive ? 'Active' : 'Inactive'}</span><Button variant="outline" size="sm" onclick={() => categoryForm = { ...category }}>Edit</Button></li>{/each}</ul>
+            <Table.Root><Table.Header><Table.Row><Table.Head>Category</Table.Head><Table.Head>Status</Table.Head><Table.Head><span class="sr-only">Actions</span></Table.Head></Table.Row></Table.Header><Table.Body>{#each categories as category (category.id)}<Table.Row><Table.Cell class="font-medium whitespace-normal">{category.name}</Table.Cell><Table.Cell>{category.isActive ? 'Active' : 'Inactive'}</Table.Cell><Table.Cell><Button variant="outline" size="sm" onclick={() => categoryForm = { ...category }}>Edit</Button></Table.Cell></Table.Row>{/each}</Table.Body></Table.Root>
           </CardContent>
         </Card>
       </div>
@@ -245,7 +246,7 @@
           <CardHeader><CardTitle><h2>Users</h2></CardTitle></CardHeader>
           <CardContent class="grid gap-4">
             <form onsubmit={saveUser} class="grid gap-4"><div class="grid gap-2"><Label for="user-name">Name</Label><Input id="user-name" bind:value={userForm.name} required /></div><div class="grid gap-2"><Label for="user-email">Email</Label><Input id="user-email" type="email" bind:value={userForm.email} required /></div><div class="grid gap-2"><Label for="user-password">Password</Label><Input id="user-password" type="password" bind:value={userForm.password} required /></div><div class="grid gap-2"><Label for="user-role">Role</Label><Select.Root type="single" bind:value={userForm.role} name="role"><Select.Trigger id="user-role" aria-label="Role" class="w-full"><Select.Value /></Select.Trigger><Select.Content><Select.Item value="cashier">Cashier</Select.Item><Select.Item value="admin">Admin</Select.Item></Select.Content></Select.Root></div><Button type="submit">Add user</Button></form>
-            <ul class="divide-y">{#each users as user (user.id)}<li class="grid gap-2 py-3 sm:grid-cols-[1fr_auto] sm:items-center"><span>{user.name} · {user.email}</span><Select.Root type="single" value={user.role} onValueChange={(role) => setRole(user, role === 'admin' ? 'admin' : 'cashier')}><Select.Trigger aria-label={`Role for ${user.name}`}><Select.Value /></Select.Trigger><Select.Content><Select.Item value="cashier">Cashier</Select.Item><Select.Item value="admin">Admin</Select.Item></Select.Content></Select.Root></li>{/each}</ul>
+            <Table.Root><Table.Header><Table.Row><Table.Head>User</Table.Head><Table.Head>Email</Table.Head><Table.Head>Role</Table.Head></Table.Row></Table.Header><Table.Body>{#each users as user (user.id)}<Table.Row><Table.Cell class="font-medium whitespace-normal">{user.name}</Table.Cell><Table.Cell class="whitespace-normal">{user.email}</Table.Cell><Table.Cell><Select.Root type="single" value={user.role} onValueChange={(role) => setRole(user, role === 'admin' ? 'admin' : 'cashier')}><Select.Trigger aria-label={`Role for ${user.name}`}><Select.Value /></Select.Trigger><Select.Content><Select.Item value="cashier">Cashier</Select.Item><Select.Item value="admin">Admin</Select.Item></Select.Content></Select.Root></Table.Cell></Table.Row>{/each}</Table.Body></Table.Root>
           </CardContent>
         </Card>
 
@@ -254,7 +255,7 @@
           <CardContent class="grid gap-4">
             <Button variant="outline" disabled={telegramChecking} onclick={checkTelegram}>{telegramChecking ? 'Checking…' : 'Check connection'}</Button>
             <form onsubmit={linkTelegram} class="grid gap-4"><div class="grid gap-2"><Label for="telegram-user">User</Label><Select.Root type="single" bind:value={linkedUserId} items={users.map((user) => ({ value: String(user.id), label: user.name }))} name="userId" required><Select.Trigger id="telegram-user" aria-label="User" class="w-full"><Select.Value placeholder="Select user" /></Select.Trigger><Select.Content>{#each users as user}<Select.Item value={String(user.id)} label={user.name} />{/each}</Select.Content></Select.Root></div><div class="grid gap-2"><Label for="telegram-user-id">Telegram user ID</Label><Input id="telegram-user-id" bind:value={telegramUserId} inputmode="numeric" required /></div><Button type="submit">Link Telegram user</Button></form>
-            <ul class="divide-y">{#each telegramLinks as link (link.id)}<li class="grid gap-2 py-3"><span>{link.name} · {link.telegramUserId} · {link.isActive ? 'Active' : 'Inactive'}</span><div class="flex flex-wrap gap-2"><Button variant="outline" size="sm" onclick={() => updateLink(link, !link.isActive)}>{link.isActive ? 'Deactivate' : 'Activate'}</Button><Button variant="destructive" size="sm" onclick={() => openUnlinkDialog(link)}>Unlink</Button></div></li>{/each}</ul>
+            <Table.Root><Table.Header><Table.Row><Table.Head>User</Table.Head><Table.Head>Telegram ID</Table.Head><Table.Head>Status</Table.Head><Table.Head><span class="sr-only">Actions</span></Table.Head></Table.Row></Table.Header><Table.Body>{#each telegramLinks as link (link.id)}<Table.Row><Table.Cell class="font-medium whitespace-normal">{link.name}</Table.Cell><Table.Cell>{link.telegramUserId}</Table.Cell><Table.Cell>{link.isActive ? 'Active' : 'Inactive'}</Table.Cell><Table.Cell><div class="flex gap-2"><Button variant="outline" size="sm" onclick={() => updateLink(link, !link.isActive)}>{link.isActive ? 'Deactivate' : 'Activate'}</Button><Button variant="destructive" size="sm" onclick={() => openUnlinkDialog(link)}>Unlink</Button></div></Table.Cell></Table.Row>{/each}</Table.Body></Table.Root>
           </CardContent>
         </Card>
       </div>

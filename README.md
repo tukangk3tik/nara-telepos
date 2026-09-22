@@ -30,6 +30,8 @@ bun run db:migrate
 bun run bootstrap:admin "Owner Name" owner@example.com "choose-a-strong-password"
 ```
 
+Run `bun run bootstrap:admin` without arguments to enter the name, email, and password interactively.
+
 The bootstrap command refuses to create a second administrator. Create other staff, products, and expense categories in **Settings** after signing in.
 
 ### Demo data
