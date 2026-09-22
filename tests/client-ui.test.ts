@@ -63,6 +63,12 @@ test('POS keeps its checkout workspace responsive', () => {
   expect(source).toContain('Checkout')
 })
 
+test.each(['Sales', 'Expenses'])('%s has a history workspace header', (name) => {
+  const source = route(name)
+  expect(source).toContain('text-3xl font-semibold tracking-tight')
+  expect(source).toContain('gap-6')
+})
+
 // Exercise the real route handlers without mounting the UI; only the API boundary is replaced.
 function settings(api: (path: string, options?: RequestInit) => Promise<unknown>) {
   const source = route('Settings')
