@@ -31,54 +31,56 @@
 </script>
 
 <div class="grid gap-4">
-  <div><h1 class="text-2xl font-bold">Dashboard</h1>{#if summary}<p class="text-sm text-muted-foreground">Summary for {summary.date}</p>{/if}</div>
-
   {#if error}
     <Alert variant="destructive" role="alert">{error}</Alert>
   {:else if !summary}
     <p>Loading dashboard…</p>
   {:else}
-    <div class="grid gap-4 sm:grid-cols-3">
+    <div><h1 class="text-3xl font-semibold tracking-tight">Dashboard</h1><p class="text-sm text-muted-foreground">Today at a glance · {summary.date}</p></div>
+
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <Card><CardHeader><CardTitle>Sales</CardTitle></CardHeader><CardContent class="text-2xl font-bold">{rupiah(summary.salesTotal)}</CardContent></Card>
       <Card><CardHeader><CardTitle>Expenses</CardTitle></CardHeader><CardContent class="text-2xl font-bold">{rupiah(summary.expensesTotal)}</CardContent></Card>
       <Card><CardHeader><CardTitle>Net profit</CardTitle></CardHeader><CardContent class="text-2xl font-bold">{rupiah(summary.netProfit)}</CardContent></Card>
     </div>
 
-    <Card>
-      <CardHeader><CardTitle>Recent transactions</CardTitle></CardHeader>
-      <CardContent>
-        {#if summary.recentTransactions.length}
-          <Table.Root>
-            <Table.Header><Table.Row><Table.Head>Reference</Table.Head><Table.Head>Type</Table.Head><Table.Head>Time</Table.Head><Table.Head class="text-right">Amount</Table.Head></Table.Row></Table.Header>
-            <Table.Body>{#each summary.recentTransactions as transaction (`${transaction.kind}-${transaction.id}`)}
-              <Table.Row class={transaction.cancelled ? 'opacity-60' : undefined}>
-                <Table.Cell class="font-medium">{transaction.reference}</Table.Cell>
-                <Table.Cell><div class="flex flex-wrap gap-1"><Badge variant="secondary">{transaction.kind}</Badge>{#if transaction.cancelled}<Badge variant="destructive">Cancelled</Badge>{/if}</div></Table.Cell>
-                <Table.Cell>{new Date(transaction.occurredAt).toLocaleString()}</Table.Cell>
-                <Table.Cell class="text-right font-medium">{rupiah(transaction.amount)}</Table.Cell>
-              </Table.Row>
-            {/each}</Table.Body>
-          </Table.Root>
-        {:else}
-          <p class="text-sm text-muted-foreground">No recent transactions.</p>
-        {/if}
-      </CardContent>
-    </Card>
+    <div class="grid gap-6 xl:grid-cols-2">
+      <Card class="h-full">
+        <CardHeader><CardTitle>Recent transactions</CardTitle></CardHeader>
+        <CardContent>
+          {#if summary.recentTransactions.length}
+            <Table.Root>
+              <Table.Header><Table.Row><Table.Head>Reference</Table.Head><Table.Head>Type</Table.Head><Table.Head>Time</Table.Head><Table.Head class="text-right">Amount</Table.Head></Table.Row></Table.Header>
+              <Table.Body>{#each summary.recentTransactions as transaction (`${transaction.kind}-${transaction.id}`)}
+                <Table.Row class={transaction.cancelled ? 'opacity-60' : undefined}>
+                  <Table.Cell class="font-medium">{transaction.reference}</Table.Cell>
+                  <Table.Cell><div class="flex flex-wrap gap-1"><Badge variant="secondary">{transaction.kind}</Badge>{#if transaction.cancelled}<Badge variant="destructive">Cancelled</Badge>{/if}</div></Table.Cell>
+                  <Table.Cell>{new Date(transaction.occurredAt).toLocaleString()}</Table.Cell>
+                  <Table.Cell class="text-right font-medium">{rupiah(transaction.amount)}</Table.Cell>
+                </Table.Row>
+              {/each}</Table.Body>
+            </Table.Root>
+          {:else}
+            <p class="text-sm text-muted-foreground">No recent transactions.</p>
+          {/if}
+        </CardContent>
+      </Card>
 
-    <Card>
-      <CardHeader><CardTitle>Low stock</CardTitle></CardHeader>
-      <CardContent>
-        {#if summary.lowStockProducts.length}
-          <Table.Root>
-            <Table.Header><Table.Row><Table.Head>Product</Table.Head><Table.Head>SKU</Table.Head><Table.Head class="text-right">Stock</Table.Head></Table.Row></Table.Header>
-            <Table.Body>{#each summary.lowStockProducts as product (product.id)}
-              <Table.Row><Table.Cell class="font-medium whitespace-normal">{product.name}</Table.Cell><Table.Cell>{product.sku}</Table.Cell><Table.Cell class="text-right"><Badge variant={product.stockQuantity === 0 ? 'destructive' : 'secondary'}>{product.stockQuantity}</Badge></Table.Cell></Table.Row>
-            {/each}</Table.Body>
-          </Table.Root>
-        {:else}
-          <p class="text-sm text-muted-foreground">No low-stock products.</p>
-        {/if}
-      </CardContent>
-    </Card>
+      <Card class="h-full">
+        <CardHeader><CardTitle>Low stock</CardTitle></CardHeader>
+        <CardContent>
+          {#if summary.lowStockProducts.length}
+            <Table.Root>
+              <Table.Header><Table.Row><Table.Head>Product</Table.Head><Table.Head>SKU</Table.Head><Table.Head class="text-right">Stock</Table.Head></Table.Row></Table.Header>
+              <Table.Body>{#each summary.lowStockProducts as product (product.id)}
+                <Table.Row><Table.Cell class="font-medium whitespace-normal">{product.name}</Table.Cell><Table.Cell>{product.sku}</Table.Cell><Table.Cell class="text-right"><Badge variant={product.stockQuantity === 0 ? 'destructive' : 'secondary'}>{product.stockQuantity}</Badge></Table.Cell></Table.Row>
+              {/each}</Table.Body>
+            </Table.Root>
+          {:else}
+            <p class="text-sm text-muted-foreground">No low-stock products.</p>
+          {/if}
+        </CardContent>
+      </Card>
+    </div>
   {/if}
 </div>

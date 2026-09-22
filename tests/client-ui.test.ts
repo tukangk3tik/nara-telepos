@@ -47,6 +47,13 @@ test.each([
   expect(source.match(/<Table\.Root\b/g)).toHaveLength(tables)
 })
 
+test('dashboard uses an overview grid and operations workspace', () => {
+  const source = route('Dashboard')
+  expect(source).toContain('Today at a glance')
+  expect(source).toContain('sm:grid-cols-2 lg:grid-cols-3')
+  expect(source).toContain('xl:grid-cols-2')
+})
+
 // Exercise the real route handlers without mounting the UI; only the API boundary is replaced.
 function settings(api: (path: string, options?: RequestInit) => Promise<unknown>) {
   const source = route('Settings')
