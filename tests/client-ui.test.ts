@@ -56,6 +56,13 @@ test('dashboard uses an overview grid and operations workspace', () => {
   expect(source).toContain('{#if summary}<p class="text-sm text-muted-foreground">Today at a glance · {summary.date}</p>{/if}')
 })
 
+test('POS keeps its checkout workspace responsive', () => {
+  const source = route('Pos')
+  expect(source).toContain('xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,.65fr)]')
+  expect(source).toContain('Catalogue')
+  expect(source).toContain('Checkout')
+})
+
 // Exercise the real route handlers without mounting the UI; only the API boundary is replaced.
 function settings(api: (path: string, options?: RequestInit) => Promise<unknown>) {
   const source = route('Settings')

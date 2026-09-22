@@ -78,9 +78,14 @@
   onMount(() => { void search() })
 </script>
 
-<div class="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(20rem,.9fr)]">
-  <Card>
-    <CardHeader><CardTitle><h1>New sale</h1></CardTitle></CardHeader>
+<div class="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,.65fr)]">
+  <div class="grid content-start gap-4">
+    <div>
+      <h1>New sale</h1>
+      <p class="text-muted-foreground">Build the order, choose a customer, and take payment.</p>
+    </div>
+    <Card>
+    <CardHeader><CardTitle><h2>Catalogue</h2></CardTitle></CardHeader>
     <CardContent class="grid gap-4">
       <div class="grid gap-2">
         <Label for="product-search">Search products</Label>
@@ -93,9 +98,11 @@
         {/each}</Table.Body>
       </Table.Root>
     </CardContent>
-  </Card>
+    </Card>
+  </div>
 
-  <div class="grid content-start gap-4">
+  <div class="grid content-start gap-4 xl:sticky xl:top-20">
+    <h2>Checkout</h2>
     <Cart items={cart} onQuantity={changeQuantity} onRemove={(id) => cart = cart.filter((item) => item.id !== id)} />
     <CustomerForm onSelect={(selected) => customer = selected} />
     {#if customer}
