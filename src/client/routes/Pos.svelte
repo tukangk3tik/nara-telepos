@@ -101,7 +101,7 @@
     </Card>
   </div>
 
-  <div class="grid content-start gap-4 xl:sticky xl:top-20">
+  <div class="grid content-start gap-4 xl:sticky xl:top-20 xl:self-start">
     <h2>Checkout</h2>
     <Cart items={cart} onQuantity={changeQuantity} onRemove={(id) => cart = cart.filter((item) => item.id !== id)} />
     <CustomerForm onSelect={(selected) => customer = selected} />
