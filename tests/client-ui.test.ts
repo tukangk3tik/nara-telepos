@@ -28,6 +28,13 @@ test('admins open on dashboard and see it as the first menu item', () => {
   expect(desktopNav.indexOf("path === '/dashboard'")).toBeLessThan(desktopNav.indexOf("path === '/pos'"))
 })
 
+test('authenticated shell uses theme tokens and a responsive content frame', () => {
+  const source = readFileSync(new URL('../src/client/App.svelte', import.meta.url), 'utf8')
+  expect(source).toContain('bg-background text-foreground')
+  expect(source).toContain('max-w-7xl')
+  expect(source).not.toContain('bg-slate-50')
+})
+
 test.each([
   ['Dashboard', 2],
   ['Expenses', 1],
