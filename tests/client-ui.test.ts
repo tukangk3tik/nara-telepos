@@ -69,6 +69,13 @@ test.each(['Sales', 'Expenses'])('%s has a history workspace header', (name) => 
   expect(source).toContain('gap-6')
 })
 
+test('settings has a responsive administration workspace', () => {
+  const source = route('Settings')
+  expect(source).toContain('Manage catalogue, staff, and store settings.')
+  expect(source).toContain('gap-6 xl:grid-cols-3')
+  expect(source).toContain('gap-6 xl:grid-cols-2')
+})
+
 // Exercise the real route handlers without mounting the UI; only the API boundary is replaced.
 function settings(api: (path: string, options?: RequestInit) => Promise<unknown>) {
   const source = route('Settings')

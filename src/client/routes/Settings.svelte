@@ -192,12 +192,12 @@
   onMount(() => { void load() })
 </script>
 
-<div class="grid gap-4">
-  <h1 class="text-2xl font-semibold tracking-tight">Settings</h1>
+<div class="grid gap-6">
+  <div><h1 class="text-3xl font-semibold tracking-tight">Settings</h1><p class="text-muted-foreground">Manage catalogue, staff, and store settings.</p></div>
   {#if message}<Alert role="status">{message}</Alert>{/if}
   {#if error && !stockDialogOpen && !unlinkDialogOpen}<Alert variant="destructive">{error}</Alert>{/if}
 
-  <Tabs.Root value="catalog" class="gap-4">
+  <Tabs.Root value="catalog" class="gap-6">
     <Tabs.List class="w-full justify-start sm:w-fit">
       <Tabs.Trigger value="catalog">Catalog</Tabs.Trigger>
       <Tabs.Trigger value="team">Team</Tabs.Trigger>
@@ -205,7 +205,7 @@
     </Tabs.List>
 
     <Tabs.Content value="catalog">
-      <div class="grid gap-4 xl:grid-cols-3">
+      <div class="grid gap-6 xl:grid-cols-3">
         <Card>
           <CardHeader><CardTitle><h2>Products</h2></CardTitle></CardHeader>
           <CardContent class="grid gap-4">
@@ -241,7 +241,7 @@
     </Tabs.Content>
 
     <Tabs.Content value="team">
-      <div class="grid gap-4 xl:grid-cols-2">
+      <div class="grid gap-6 xl:grid-cols-2">
         <Card>
           <CardHeader><CardTitle><h2>Users</h2></CardTitle></CardHeader>
           <CardContent class="grid gap-4">
