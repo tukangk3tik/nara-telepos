@@ -38,7 +38,7 @@ export function createDashboardRoutes({ db }: { db: DatabaseClient }) {
     const salesRows = db.select({ amount: sales.totalAmount }).from(sales)
       .where(and(gte(sales.completedAt, dayStart), lt(sales.completedAt, dayEnd), isNull(sales.cancelledAt))).all()
     const expenseRows = db.select({ amount: expenses.amount }).from(expenses)
-      .where(eq(expenses.transactionDate, date)).all()
+      .where(and(eq(expenses.transactionDate, date), isNull(expenses.deletedAt))).all()
     const salesTotal = salesRows.reduce((total, row) => total + row.amount, 0)
     const expensesTotal = expenseRows.reduce((total, row) => total + row.amount, 0)
     const recentSales: DashboardSummary['recentTransactions'] = db.select({
@@ -53,8 +53,9 @@ export function createDashboardRoutes({ db }: { db: DatabaseClient }) {
       reference: expenses.expenseNumber,
       amount: expenses.amount,
       occurredAt: expenses.createdAt,
+      deletedAt: expenses.deletedAt,
     }).from(expenses).innerJoin(expenseCategories, eq(expenses.expenseCategoryId, expenseCategories.id)).all()
-      .map((expense) => ({ kind: 'expense', ...expense, occurredAt: utcTimestamp(expense.occurredAt), cancelled: false }))
+      .map(({ deletedAt, ...expense }) => ({ kind: 'expense', ...expense, occurredAt: utcTimestamp(expense.occurredAt), cancelled: deletedAt !== null }))
 
     return c.json({
       date,

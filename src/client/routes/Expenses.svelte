@@ -1,10 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { api } from '../lib/api'
+  import { cancellationReason } from '../lib/dialog-validation'
   import { Alert } from '$lib/components/ui/alert/index.js'
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card/index.js'
+  import * as Dialog from '$lib/components/ui/dialog/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
   import * as Select from '$lib/components/ui/select/index.js'
@@ -12,7 +14,9 @@
   import { Textarea } from '$lib/components/ui/textarea/index.js'
 
   type Category = { id: number; name: string }
-  type Expense = { id: number; expenseNumber: string; expenseCategoryId: number; categoryName: string; amount: number; transactionDate: string; notes: string | null; source: string; createdAt: string }
+  type Expense = { id: number; expenseNumber: string; expenseCategoryId: number; categoryName: string; amount: number; transactionDate: string; notes: string | null; source: string; createdAt: string; deletedAt: string | null; deletionReason: string | null }
+
+  export let actor: { id: number; role: 'admin' | 'cashier' }
 
   const rupiah = (value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value)
   const today = new Date()
@@ -25,6 +29,10 @@
   let notes = ''
   let error = ''
   let submitting = false
+  let expenseToDelete: Expense | null = null
+  let deleteReason = ''
+  let deletionDialogOpen = false
+  let deleting = false
 
   async function load() {
     try {
@@ -65,6 +73,34 @@
     }
   }
 
+  function openDeletion(expense: Expense) {
+    error = ''
+    expenseToDelete = expense
+    deleteReason = ''
+    deletionDialogOpen = true
+  }
+
+  async function deleteSelected() {
+    if (!expenseToDelete || deleting) return
+    const reason = cancellationReason(deleteReason)
+    if (!reason) { error = 'A deletion reason is required.'; return }
+    error = ''
+    deleting = true
+    try {
+      await api<void>(`/api/expenses/${expenseToDelete.id}`, {
+        method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reason }),
+      })
+      selected = null
+      deletionDialogOpen = false
+      expenseToDelete = null
+      await load()
+    } catch (cause) {
+      error = cause instanceof Error ? cause.message : 'Could not delete expense'
+    } finally {
+      deleting = false
+    }
+  }
+
   onMount(() => { void load() })
 </script>
 
@@ -88,7 +124,7 @@
         <div class="grid gap-2"><Label for="expense-notes">Notes</Label><Textarea id="expense-notes" bind:value={notes} maxlength="1000" /></div>
         <Button type="submit" disabled={submitting || !categories.length}>{submitting ? 'Creating…' : 'Create expense'}</Button>
       </form>
-      {#if error}<Alert variant="destructive" class="mt-4">{error}</Alert>{/if}
+      {#if error && !deletionDialogOpen}<Alert variant="destructive" class="mt-4" onClose={() => error = ''}>{error}</Alert>{/if}
     </CardContent>
   </Card>
 
@@ -96,13 +132,21 @@
     <CardHeader><CardTitle><h2>Expense history</h2></CardTitle></CardHeader>
     <CardContent class="grid gap-4">
       <Table.Root>
-        <Table.Header><Table.Row><Table.Head>Expense</Table.Head><Table.Head>Category</Table.Head><Table.Head>Date</Table.Head><Table.Head class="text-right">Amount</Table.Head></Table.Row></Table.Header>
+        <Table.Header><Table.Row><Table.Head>Expense</Table.Head><Table.Head>Category</Table.Head><Table.Head>Date</Table.Head><Table.Head class="text-right">Amount</Table.Head><Table.Head><span class="sr-only">Actions</span></Table.Head></Table.Row></Table.Header>
         <Table.Body>{#each expenses as expense (expense.id)}
-          <Table.Row><Table.Cell><Button variant="outline" size="sm" onclick={() => details(expense.id)}>{expense.expenseNumber}</Button></Table.Cell><Table.Cell class="whitespace-normal">{expense.categoryName}</Table.Cell><Table.Cell>{expense.transactionDate}</Table.Cell><Table.Cell class="text-right font-medium">{rupiah(expense.amount)}</Table.Cell></Table.Row>
+          <Table.Row class={expense.deletedAt ? 'opacity-60' : undefined}><Table.Cell><div class="grid gap-1"><Button variant="outline" size="sm" onclick={() => details(expense.id)}>{expense.expenseNumber}</Button>{#if expense.deletedAt}<span class="text-destructive text-xs">Deleted: {expense.deletionReason}</span>{/if}</div></Table.Cell><Table.Cell class="whitespace-normal">{expense.categoryName}</Table.Cell><Table.Cell>{expense.transactionDate}</Table.Cell><Table.Cell class="text-right font-medium">{rupiah(expense.amount)}</Table.Cell><Table.Cell>{#if actor.role === 'admin' && !expense.deletedAt}<Button variant="destructive" size="sm" onclick={() => openDeletion(expense)}>Delete</Button>{/if}</Table.Cell></Table.Row>
         {/each}</Table.Body>
       </Table.Root>
-      {#if selected}<article class="grid gap-2 rounded-lg border p-4"><div class="flex flex-wrap items-center gap-2"><h2 class="font-medium">{selected.expenseNumber}</h2><Badge variant="secondary">{selected.categoryName}</Badge><strong>{rupiah(selected.amount)}</strong></div><p class="text-muted-foreground">{selected.transactionDate}</p>{#if selected.notes}<p>{selected.notes}</p>{/if}</article>{/if}
+      {#if selected}<article class="grid gap-2 rounded-lg border p-4"><div class="flex flex-wrap items-center gap-2"><h2 class="font-medium">{selected.expenseNumber}</h2><Badge variant="secondary">{selected.categoryName}</Badge><strong>{rupiah(selected.amount)}</strong></div><p class="text-muted-foreground">{selected.transactionDate}</p>{#if selected.notes}<p>{selected.notes}</p>{/if}{#if selected.deletedAt}{#key selected.id}<Alert variant="destructive">Deleted: {selected.deletionReason}</Alert>{/key}{/if}</article>{/if}
     </CardContent>
   </Card>
 </div>
 </div>
+
+<Dialog.Root bind:open={deletionDialogOpen}>
+  <Dialog.Content showCloseButton={!deleting}>
+    <Dialog.Header><Dialog.Title>Delete {expenseToDelete?.expenseNumber}</Dialog.Title><Dialog.Description>This expense will be excluded from totals and kept in history with your reason.</Dialog.Description></Dialog.Header>
+    <div class="grid gap-2"><Label for="expense-deletion-reason">Deletion reason</Label><Input id="expense-deletion-reason" bind:value={deleteReason} disabled={deleting} aria-invalid={Boolean(error)} />{#if error}<Alert variant="destructive" onClose={() => error = ''}>{error}</Alert>{/if}</div>
+    <Dialog.Footer><Dialog.Close disabled={deleting}>{#snippet child({ props })}<Button variant="outline" disabled={deleting} {...props}>Keep expense</Button>{/snippet}</Dialog.Close><Button variant="destructive" disabled={deleting} onclick={deleteSelected}>{deleting ? 'Deleting…' : 'Delete expense'}</Button></Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>

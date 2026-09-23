@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test'
 import { createApp } from '../src/server/app'
 import { expenseCategories, products, users } from '../src/server/db/schema'
 import { createTestDatabase } from './helpers/database'
+import { serverLocalDate } from '../src/server/telegram/expense-flow'
 
 const password = 'secret123'
 
@@ -209,4 +210,27 @@ test('cashier cannot view another cashier expense detail', async () => {
 
   expect(response.status).toBe(404)
   expect(await response.json()).toEqual({ error: 'EXPENSE_NOT_FOUND' })
+})
+
+test('only an admin can delete an expense with a reason, and deleted expenses leave totals', async () => {
+  const { adminRequest, cashierRequest, category } = await setup()
+  const created = await cashierRequest('/api/expenses', {
+    method: 'POST', body: JSON.stringify({ expenseCategoryId: category.id, amount: 25000, transactionDate: serverLocalDate() }),
+  })
+  const expense = await created.json() as { id: number }
+  const path = `/api/expenses/${expense.id}`
+
+  expect((await cashierRequest(path, { method: 'DELETE', body: JSON.stringify({ reason: 'Duplicate' }) })).status).toBe(403)
+  expect((await adminRequest(path, { method: 'DELETE', body: JSON.stringify({ reason: '  ' }) })).status).toBe(400)
+  expect((await adminRequest('/api/dashboard')).status).toBe(200)
+  expect((await (await adminRequest('/api/dashboard')).json()).expensesTotal).toBe(25000)
+
+  expect((await adminRequest(path, { method: 'DELETE', body: JSON.stringify({ reason: '  Duplicate entry  ' }) })).status).toBe(204)
+  expect(await (await adminRequest(path)).json()).toMatchObject({ deletionReason: 'Duplicate entry', deletedAt: expect.any(String) })
+  expect((await (await adminRequest('/api/expenses')).json()).find((item: { id: number }) => item.id === expense.id))
+    .toMatchObject({ deletionReason: 'Duplicate entry' })
+  const dashboard = await (await adminRequest('/api/dashboard')).json()
+  expect(dashboard.expensesTotal).toBe(0)
+  expect(dashboard.recentTransactions.find((item: { id: number; kind: string }) => item.kind === 'expense' && item.id === expense.id).cancelled).toBe(true)
+  expect((await adminRequest(path, { method: 'DELETE', body: JSON.stringify({ reason: 'Again' }) })).status).toBe(409)
 })

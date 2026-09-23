@@ -94,7 +94,7 @@
         {#if path === '/sales' || /^\/sales\/[1-9]\d*$/.test(path)}
           {#key path}<Sales {actor} saleId={path === '/sales' ? null : Number(path.split('/')[2])} />{/key}
         {:else if path === '/expenses'}
-          <Expenses />
+          <Expenses {actor} />
         {:else if path === '/settings' && actor.role === 'admin'}
           <Settings />
         {:else if path === '/dashboard' && actor.role === 'admin'}

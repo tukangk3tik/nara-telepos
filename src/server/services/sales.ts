@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm'
+import { eq, like, sql } from 'drizzle-orm'
 import type { DatabaseClient } from '../db'
 import { customers, products, saleItems, sales, stockMovements, users } from '../db/schema'
 import { DomainError, InsufficientStockError, SaleAlreadyCancelledError } from '../domain/errors'
@@ -67,7 +67,12 @@ export function createCompletedSaleSync(db: DatabaseExecutor, input: SaleInput, 
     if (!Number.isSafeInteger(totalAmount)) throw new DomainError('INVALID_AMOUNT', 'Sale total is too large')
 
     const completedAt = new Date().toISOString()
-    const invoiceNumber = `INV-${crypto.randomUUID()}`
+    const date = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' })
+      .format(new Date(completedAt)).split('/').reverse().join('')
+    const prefix = `INV-${date}-`
+    const lastSequence = tx.select({ value: sql<number>`coalesce(max(cast(substr(${sales.invoiceNumber}, 14) as integer)), 0)` })
+      .from(sales).where(like(sales.invoiceNumber, `${prefix}%`)).get()?.value ?? 0
+    const invoiceNumber = `${prefix}${String(lastSequence + 1).padStart(4, '0')}`
     const sale = tx.insert(sales).values({
       invoiceNumber,
       customerId: saleInput.customerId ?? null,

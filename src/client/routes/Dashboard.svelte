@@ -34,7 +34,7 @@
   <div><h1 class="text-3xl font-semibold tracking-tight">Dashboard</h1>{#if summary}<p class="text-sm text-muted-foreground">Today at a glance · {summary.date}</p>{/if}</div>
 
   {#if error}
-    <Alert variant="destructive" role="alert">{error}</Alert>
+    <Alert variant="destructive" role="alert" onClose={() => error = ''}>{error}</Alert>
   {:else if !summary}
     <p>Loading dashboard…</p>
   {:else}
@@ -54,7 +54,7 @@
               <Table.Body>{#each summary.recentTransactions as transaction (`${transaction.kind}-${transaction.id}`)}
                 <Table.Row class={transaction.cancelled ? 'opacity-60' : undefined}>
                   <Table.Cell class="font-medium">{transaction.reference}</Table.Cell>
-                  <Table.Cell><div class="flex flex-wrap gap-1"><Badge variant="secondary">{transaction.kind}</Badge>{#if transaction.cancelled}<Badge variant="destructive">Cancelled</Badge>{/if}</div></Table.Cell>
+                  <Table.Cell><div class="flex flex-wrap gap-1"><Badge variant="secondary">{transaction.kind}</Badge>{#if transaction.cancelled}<Badge variant="destructive">{transaction.kind === 'expense' ? 'Deleted' : 'Cancelled'}</Badge>{/if}</div></Table.Cell>
                   <Table.Cell>{new Date(transaction.occurredAt).toLocaleString()}</Table.Cell>
                   <Table.Cell class="text-right font-medium">{rupiah(transaction.amount)}</Table.Cell>
                 </Table.Row>

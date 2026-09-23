@@ -29,6 +29,15 @@ test('records a non-inventory expense', async () => {
   expect(db.select({ id: stockMovements.id }).from(stockMovements).all()).toEqual([])
 })
 
+test('numbers expenses sequentially for each transaction date', async () => {
+  const { db, cashier, category } = await setup()
+  const input: ExpenseInput = { expenseCategoryId: category.id, amount: 1000, transactionDate: '2026-09-23', source: 'web' }
+
+  expect((await createExpense(db, input, cashier)).expenseNumber).toBe('EXP-20260923-0001')
+  expect((await createExpense(db, input, cashier)).expenseNumber).toBe('EXP-20260923-0002')
+  expect((await createExpense(db, { ...input, transactionDate: '2026-09-22' }, cashier)).expenseNumber).toBe('EXP-20260922-0001')
+})
+
 test('rejects an inactive category without recording an expense', async () => {
   const { db, cashier, inactiveCategory } = await setup()
 

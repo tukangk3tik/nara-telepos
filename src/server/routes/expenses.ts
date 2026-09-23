@@ -1,12 +1,12 @@
 import { and, desc, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
-import { requireActor } from '../auth'
+import { requireActor, requireRole } from '../auth'
 import type { DatabaseClient } from '../db'
 import { expenseCategories, expenses } from '../db/schema'
 import { DomainError } from '../domain/errors'
 import type { ExpenseInput } from '../domain/types'
 import { listExpenseCategories } from '../services/catalog'
-import { createExpense } from '../services/expenses'
+import { createExpense, deleteExpense } from '../services/expenses'
 
 const expenseId = (value: string) => {
   const id = Number(value)
@@ -24,6 +24,9 @@ const expenseFields = {
   source: expenses.source,
   createdByUserId: expenses.createdByUserId,
   createdAt: expenses.createdAt,
+  deletedAt: expenses.deletedAt,
+  deletedByUserId: expenses.deletedByUserId,
+  deletionReason: expenses.deletionReason,
   categoryName: expenseCategories.name,
 }
 
@@ -50,6 +53,13 @@ export function createExpenseRoutes({ db }: { db: DatabaseClient }) {
   })
 
   app.get('/categories', (c) => c.json(listExpenseCategories(db, true)))
+
+  app.delete('/:id', requireRole('admin'), async (c) => {
+    const body = await c.req.json().catch(() => ({}))
+    const input = body && typeof body === 'object' && !Array.isArray(body) ? body as Record<string, unknown> : {}
+    deleteExpense(db, expenseId(c.req.param('id')), input.reason as string, requireActor(c))
+    return c.body(null, 204)
+  })
 
   app.get('/:id', (c) => {
     const actor = requireActor(c)
