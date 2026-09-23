@@ -194,8 +194,8 @@
 
 <div class="grid gap-6">
   <div><h1 class="text-3xl font-semibold tracking-tight">Settings</h1><p class="text-muted-foreground">Manage catalogue, staff, and store settings.</p></div>
-  {#if message}<Alert role="status">{message}</Alert>{/if}
-  {#if error && !stockDialogOpen && !unlinkDialogOpen}<Alert variant="destructive">{error}</Alert>{/if}
+  {#if message}<Alert variant="success" role="status" onClose={() => message = ''}>{message}</Alert>{/if}
+  {#if error && !stockDialogOpen && !unlinkDialogOpen}<Alert variant="destructive" onClose={() => error = ''}>{error}</Alert>{/if}
 
   <Tabs.Root value="catalog" class="gap-6">
     <Tabs.List class="w-full justify-start sm:w-fit">
@@ -273,7 +273,7 @@
 <Dialog.Root bind:open={stockDialogOpen} onOpenChange={setStockDialogOpen}>
   <Dialog.Content>
     <Dialog.Header><Dialog.Title>Adjust stock for {stockToAdjust?.name}</Dialog.Title><Dialog.Description>Use a negative number to reduce stock. Every change is audited.</Dialog.Description></Dialog.Header>
-    <div class="grid gap-4"><div class="grid gap-2"><Label for="stock-quantity-delta">Quantity adjustment</Label><Input id="stock-quantity-delta" type="number" step="1" bind:value={quantityDelta} aria-invalid={Boolean(error)} /></div><div class="grid gap-2"><Label for="stock-adjustment-reason">Reason</Label><Textarea id="stock-adjustment-reason" bind:value={adjustmentReason} aria-invalid={Boolean(error)} /></div>{#if error}<Alert variant="destructive">{error}</Alert>{/if}</div>
+    <div class="grid gap-4"><div class="grid gap-2"><Label for="stock-quantity-delta">Quantity adjustment</Label><Input id="stock-quantity-delta" type="number" step="1" bind:value={quantityDelta} aria-invalid={Boolean(error)} /></div><div class="grid gap-2"><Label for="stock-adjustment-reason">Reason</Label><Textarea id="stock-adjustment-reason" bind:value={adjustmentReason} aria-invalid={Boolean(error)} /></div>{#if error}<Alert variant="destructive" onClose={() => error = ''}>{error}</Alert>{/if}</div>
     <Dialog.Footer><Dialog.Close>{#snippet child({ props })}<Button variant="outline" {...props}>Cancel</Button>{/snippet}</Dialog.Close><Button disabled={adjustingStock} onclick={adjustStock}>{adjustingStock ? 'Saving…' : 'Adjust stock'}</Button></Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>
@@ -281,7 +281,7 @@
 <Dialog.Root bind:open={unlinkDialogOpen} onOpenChange={setUnlinkDialogOpen}>
   <Dialog.Content>
     <Dialog.Header><Dialog.Title>Unlink Telegram user</Dialog.Title><Dialog.Description>Remove the Telegram link for {linkToRemove?.name}? This action cannot be undone.</Dialog.Description></Dialog.Header>
-    {#if error}<Alert variant="destructive">{error}</Alert>{/if}
+    {#if error}<Alert variant="destructive" onClose={() => error = ''}>{error}</Alert>{/if}
     <Dialog.Footer><Dialog.Close>{#snippet child({ props })}<Button variant="outline" {...props}>Cancel</Button>{/snippet}</Dialog.Close><Button variant="destructive" onclick={removeLink}>Unlink</Button></Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>

@@ -119,7 +119,7 @@
           </Select.Root>
         </div>
         <Button disabled={!cart.length || submitting} onclick={openSaleConfirmation}>{submitting ? 'Saving…' : 'Confirm payment'}</Button>
-        {#if error && !saleDialogOpen}<Alert variant="destructive" role="alert">{error}</Alert>{/if}
+        {#if error && !saleDialogOpen}<Alert variant="destructive" role="alert" onClose={() => error = ''}>{error}</Alert>{/if}
       </CardContent>
     </Card>
   </div>
@@ -131,7 +131,7 @@
       <Dialog.Title>Confirm payment</Dialog.Title>
       <Dialog.Description>Complete this {paymentMethod.toUpperCase()} payment for {rupiah(cart.reduce((sum, item) => sum + item.salePrice * item.quantity, 0))}?</Dialog.Description>
     </Dialog.Header>
-    {#if error}<Alert variant="destructive" role="alert">{error}</Alert>{/if}
+    {#if error}<Alert variant="destructive" role="alert" onClose={() => error = ''}>{error}</Alert>{/if}
     <Dialog.Footer>
       <Dialog.Close disabled={submitting}>
         {#snippet child({ props })}

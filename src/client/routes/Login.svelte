@@ -48,7 +48,7 @@
           <Label for="password">Password</Label>
           <Input id="password" type="password" bind:value={password} autocomplete="current-password" required />
         </div>
-        {#if error}<Alert variant="destructive" role="alert">{error}</Alert>{/if}
+        {#if error}<Alert variant="destructive" role="alert" onClose={() => error = ''}>{error}</Alert>{/if}
         <Button type="submit" disabled={submitting}>{submitting ? 'Signing in…' : 'Sign in'}</Button>
       </form>
     </CardContent>

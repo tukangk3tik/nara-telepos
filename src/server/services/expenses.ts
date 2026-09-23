@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, like, sql } from 'drizzle-orm'
 import type { DatabaseClient } from '../db'
 import { expenseCategories, expenses, users } from '../db/schema'
 import { DomainError } from '../domain/errors'
@@ -43,7 +43,10 @@ export function createExpenseSync(db: DatabaseExecutor, input: ExpenseInput, act
     if (!category) throw new DomainError('EXPENSE_CATEGORY_NOT_FOUND', 'Expense category not found')
     if (!category.isActive) throw new DomainError('EXPENSE_CATEGORY_INACTIVE', 'Expense category is inactive')
 
-    const expenseNumber = `EXP-${crypto.randomUUID()}`
+    const prefix = `EXP-${expenseInput.transactionDate.replaceAll('-', '')}-`
+    const lastSequence = tx.select({ value: sql<number>`coalesce(max(cast(substr(${expenses.expenseNumber}, 14) as integer)), 0)` })
+      .from(expenses).where(like(expenses.expenseNumber, `${prefix}%`)).get()?.value ?? 0
+    const expenseNumber = `${prefix}${String(lastSequence + 1).padStart(4, '0')}`
     const expense = tx.insert(expenses).values({ ...expenseInput, expenseNumber, createdByUserId: expenseActor.id })
       .returning({ id: expenses.id, expenseNumber: expenses.expenseNumber }).get()
     if (!expense) throw new DomainError('EXPENSE_CREATE_FAILED', 'Could not create expense')
@@ -54,4 +57,20 @@ export function createExpenseSync(db: DatabaseExecutor, input: ExpenseInput, act
 
 export async function createExpense(db: DatabaseExecutor, input: ExpenseInput, actor: Actor): Promise<ExpenseReceipt> {
   return createExpenseSync(db, input, actor)
+}
+
+export function deleteExpense(db: DatabaseClient, expenseId: number, reason: string, actor: Actor): void {
+  db.transaction((tx) => {
+    if (!isPositiveInteger(expenseId)) invalid('Invalid expense')
+    const deletionReason = typeof reason === 'string' ? reason.trim() : ''
+    if (!deletionReason) invalid('Deletion reason is required')
+    const expenseActor = validateActor(actor)
+    const storedActor = tx.select({ role: users.role }).from(users).where(eq(users.id, expenseActor.id)).get()
+    if (!storedActor || storedActor.role !== 'admin' || expenseActor.role !== 'admin') throw new DomainError('FORBIDDEN', 'Administrator access required')
+    const expense = tx.select({ deletedAt: expenses.deletedAt }).from(expenses).where(eq(expenses.id, expenseId)).get()
+    if (!expense) throw new DomainError('EXPENSE_NOT_FOUND', 'Expense not found')
+    if (expense.deletedAt) throw new DomainError('EXPENSE_DELETE_CONFLICT', 'Expense has already been deleted')
+    tx.update(expenses).set({ deletedAt: new Date().toISOString(), deletedByUserId: expenseActor.id, deletionReason })
+      .where(eq(expenses.id, expenseId)).run()
+  }, { behavior: 'immediate' })
 }

@@ -95,6 +95,9 @@ export const expenses = sqliteTable('expenses', {
   source: text('source', { enum: ['web', 'telegram'] }).notNull(),
   createdByUserId: integer('created_by_user_id').notNull().references(() => users.id),
   createdAt: createdAt(),
+  deletedAt: text('deleted_at'),
+  deletedByUserId: integer('deleted_by_user_id').references(() => users.id),
+  deletionReason: text('deletion_reason'),
 }, (table) => [uniqueIndex('expenses_expense_number_unique').on(table.expenseNumber)])
 
 export const telegramStaff = sqliteTable('telegram_staff', {

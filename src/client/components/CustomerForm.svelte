@@ -56,6 +56,6 @@
         <Button class="sm:col-span-3 sm:w-fit" type="submit">Add customer</Button>
       </form>
     </details>
-    {#if error}<Alert variant="destructive" role="alert">{error}</Alert>{/if}
+    {#if error}<Alert variant="destructive" role="alert" onClose={() => error = ''}>{error}</Alert>{/if}
   </CardContent>
 </Card>

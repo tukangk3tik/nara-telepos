@@ -39,6 +39,16 @@ test('creates server-priced snapshots and stock movements atomically', async () 
     .from(stockMovements).where(eq(stockMovements.productId, product.id)).get()).toEqual({ quantityDelta: -2, reason: 'sale', referenceId: receipt.id, createdByUserId: cashier.id })
 })
 
+test('numbers invoices sequentially for the Jakarta calendar day', async () => {
+  const { db, cashier, product } = await setup()
+  const date = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' })
+    .format(new Date()).split('/').reverse().join('')
+  const input: SaleInput = { source: 'web', paymentMethod: 'cash', items: [{ productId: product.id, quantity: 1 }] }
+
+  expect((await createCompletedSale(db, input, cashier)).invoiceNumber).toBe(`INV-${date}-0001`)
+  expect((await createCompletedSale(db, input, cashier)).invoiceNumber).toBe(`INV-${date}-0002`)
+})
+
 test('rejects insufficient stock without partial writes', async () => {
   const { db, cashier, product } = await setup()
   const tea = db.insert(products).values({ name: 'Tea', sku: 'TEA-1', salePrice: 10000, stockQuantity: 1 }).returning().get()!

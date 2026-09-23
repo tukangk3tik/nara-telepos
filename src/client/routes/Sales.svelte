@@ -84,7 +84,7 @@
   <Card>
     <CardHeader><CardTitle><h1 class="text-3xl font-semibold tracking-tight">Sales history</h1></CardTitle><p class="text-sm text-muted-foreground">Review completed sales and open their receipts.</p></CardHeader>
     <CardContent class="grid gap-4">
-      {#if error}<Alert variant="destructive">{error}</Alert>{/if}
+      {#if error}<Alert variant="destructive" onClose={() => error = ''}>{error}</Alert>{/if}
       <Table.Root>
         <Table.Header><Table.Row><Table.Head>Invoice</Table.Head><Table.Head>Completed</Table.Head><Table.Head>Payment</Table.Head><Table.Head>Total</Table.Head><Table.Head><span class="sr-only">Actions</span></Table.Head></Table.Row></Table.Header>
         <Table.Body>{#each sales as sale (sale.id)}
@@ -107,7 +107,7 @@
         <Table.Header><Table.Row><Table.Head>Product</Table.Head><Table.Head>SKU</Table.Head><Table.Head class="text-right">Quantity</Table.Head><Table.Head class="text-right">Total</Table.Head></Table.Row></Table.Header>
         <Table.Body>{#each selected.items as item (item.id)}<Table.Row><Table.Cell class="font-medium whitespace-normal">{item.productName}</Table.Cell><Table.Cell>{item.sku}</Table.Cell><Table.Cell class="text-right">{item.quantity}</Table.Cell><Table.Cell class="text-right font-medium">{rupiah(item.lineTotal)}</Table.Cell></Table.Row>{/each}</Table.Body>
       </Table.Root>
-      {#if selected.cancelledAt}<Alert variant="destructive">Cancelled: {selected.cancellationReason}</Alert>{/if}
+      {#if selected.cancelledAt}{#key selected.id}<Alert variant="destructive">Cancelled: {selected.cancellationReason}</Alert>{/key}{/if}
     </CardContent>
   </Card>
   {/if}
@@ -122,7 +122,7 @@
     <div class="grid gap-2">
       <label for="cancellation-reason" class="font-medium">Cancellation reason</label>
       <Input id="cancellation-reason" bind:value={cancelReason} disabled={cancelling} aria-invalid={Boolean(error)} />
-      {#if error}<Alert variant="destructive">{error}</Alert>{/if}
+      {#if error}<Alert variant="destructive" onClose={() => error = ''}>{error}</Alert>{/if}
     </div>
     <Dialog.Footer>
       <Dialog.Close disabled={cancelling}>
