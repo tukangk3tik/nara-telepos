@@ -68,9 +68,12 @@
   onMount(() => { void load() })
 </script>
 
-<div class="grid gap-4 lg:grid-cols-[minmax(0,.8fr)_minmax(20rem,1.2fr)]">
+<div class="grid gap-6">
+  <div><h1 class="text-3xl font-semibold tracking-tight">Expenses</h1><p class="text-sm text-muted-foreground">Record costs and review recent spending.</p></div>
+
+<div class="grid gap-6 xl:grid-cols-[minmax(20rem,.8fr)_minmax(0,1.2fr)]">
   <Card>
-    <CardHeader><CardTitle><h1>New expense</h1></CardTitle></CardHeader>
+    <CardHeader><CardTitle><h2>New expense</h2></CardTitle></CardHeader>
     <CardContent>
       <form class="grid gap-4" onsubmit={create}>
         <div class="grid gap-2">
@@ -101,4 +104,5 @@
       {#if selected}<article class="grid gap-2 rounded-lg border p-4"><div class="flex flex-wrap items-center gap-2"><h2 class="font-medium">{selected.expenseNumber}</h2><Badge variant="secondary">{selected.categoryName}</Badge><strong>{rupiah(selected.amount)}</strong></div><p class="text-muted-foreground">{selected.transactionDate}</p>{#if selected.notes}<p>{selected.notes}</p>{/if}</article>{/if}
     </CardContent>
   </Card>
+</div>
 </div>

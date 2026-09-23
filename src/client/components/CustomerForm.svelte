@@ -42,7 +42,7 @@
 
 <Card>
   <CardHeader><CardTitle><h2>Customer <span class="text-muted-foreground font-normal">(optional)</span></h2></CardTitle></CardHeader>
-  <CardContent class="grid gap-4">
+  <CardContent class="grid gap-5">
     <div class="grid gap-2"><Label for="customer-search">Find customer</Label><Input id="customer-search" bind:value={query} oninput={search} placeholder="Name, phone, or email" /></div>
     {#if customers.length}
       <ul class="flex flex-wrap gap-2">{#each customers as customer (customer.id)}<li><Button variant="secondary" onclick={() => onSelect(customer)}>{customer.name}{customer.phone ? ` · ${customer.phone}` : ''}</Button></li>{/each}</ul>

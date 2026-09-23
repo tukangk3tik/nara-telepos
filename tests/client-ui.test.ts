@@ -28,6 +28,13 @@ test('admins open on dashboard and see it as the first menu item', () => {
   expect(desktopNav.indexOf("path === '/dashboard'")).toBeLessThan(desktopNav.indexOf("path === '/pos'"))
 })
 
+test('authenticated shell uses theme tokens and a responsive content frame', () => {
+  const source = readFileSync(new URL('../src/client/App.svelte', import.meta.url), 'utf8')
+  expect(source).toContain('bg-background text-foreground')
+  expect(source).toContain('max-w-7xl')
+  expect(source).not.toContain('bg-slate-50')
+})
+
 test.each([
   ['Dashboard', 2],
   ['Expenses', 1],
@@ -38,6 +45,35 @@ test.each([
   const source = route(name)
   expect(source).toContain("$lib/components/ui/table/index.js")
   expect(source.match(/<Table\.Root\b/g)).toHaveLength(tables)
+})
+
+test('dashboard uses an overview grid and operations workspace', () => {
+  const source = route('Dashboard')
+  expect(source).toContain('Today at a glance')
+  expect(source).toContain('sm:grid-cols-2 lg:grid-cols-3')
+  expect(source).toContain('xl:grid-cols-2')
+  expect(source.indexOf('<h1')).toBeLessThan(source.indexOf('{#if error}'))
+  expect(source).toContain('{#if summary}<p class="text-sm text-muted-foreground">Today at a glance · {summary.date}</p>{/if}')
+})
+
+test('POS keeps its checkout workspace responsive', () => {
+  const source = route('Pos')
+  expect(source).toContain('xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,.65fr)]')
+  expect(source).toContain('Catalogue')
+  expect(source).toContain('Checkout')
+})
+
+test.each(['Sales', 'Expenses'])('%s has a history workspace header', (name) => {
+  const source = route(name)
+  expect(source).toContain('text-3xl font-semibold tracking-tight')
+  expect(source).toContain('gap-6')
+})
+
+test('settings has a responsive administration workspace', () => {
+  const source = route('Settings')
+  expect(source).toContain('Manage catalogue, staff, and store settings.')
+  expect(source).toContain('gap-6 xl:grid-cols-3')
+  expect(source).toContain('gap-6 xl:grid-cols-2')
 })
 
 // Exercise the real route handlers without mounting the UI; only the API boundary is replaced.

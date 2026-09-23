@@ -15,7 +15,7 @@
 
 <Card>
   <CardHeader><CardTitle><h2>Cart</h2></CardTitle></CardHeader>
-  <CardContent>
+  <CardContent class="grid gap-4">
     {#if !items.length}
       <p class="text-muted-foreground">Search and add products to start a sale.</p>
     {:else}

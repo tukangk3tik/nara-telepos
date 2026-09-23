@@ -80,25 +80,26 @@
   })
 </script>
 
-<Card>
-  <CardHeader><CardTitle><h1>Sales history</h1></CardTitle></CardHeader>
-  <CardContent class="grid gap-4">
-    {#if error}<Alert variant="destructive">{error}</Alert>{/if}
-    <Table.Root>
-      <Table.Header><Table.Row><Table.Head>Invoice</Table.Head><Table.Head>Completed</Table.Head><Table.Head>Payment</Table.Head><Table.Head>Total</Table.Head><Table.Head><span class="sr-only">Actions</span></Table.Head></Table.Row></Table.Header>
-      <Table.Body>{#each sales as sale (sale.id)}
-        <Table.Row class={sale.cancelledAt ? 'opacity-60' : undefined}>
-          <Table.Cell class="whitespace-normal"><div class="grid gap-1"><strong>{sale.invoiceNumber}</strong>{#if sale.cancelledAt}<span class="text-destructive text-xs">Cancelled: {sale.cancellationReason}</span>{/if}</div></Table.Cell>
-          <Table.Cell>{new Date(sale.completedAt).toLocaleString()}</Table.Cell><Table.Cell><Badge variant="secondary">{sale.paymentMethod}</Badge></Table.Cell><Table.Cell>{rupiah(sale.totalAmount)}</Table.Cell>
-          <Table.Cell><div class="flex gap-2"><Button variant="outline" size="sm" onclick={() => details(sale.id)}>Details</Button>{#if actor.role === 'admin' && !sale.cancelledAt}<Button variant="destructive" size="sm" onclick={() => openCancellation(sale)}>Cancel</Button>{/if}</div></Table.Cell>
-        </Table.Row>
-      {/each}</Table.Body>
-    </Table.Root>
-  </CardContent>
-</Card>
+<div class="grid gap-6">
+  <Card>
+    <CardHeader><CardTitle><h1 class="text-3xl font-semibold tracking-tight">Sales history</h1></CardTitle><p class="text-sm text-muted-foreground">Review completed sales and open their receipts.</p></CardHeader>
+    <CardContent class="grid gap-4">
+      {#if error}<Alert variant="destructive">{error}</Alert>{/if}
+      <Table.Root>
+        <Table.Header><Table.Row><Table.Head>Invoice</Table.Head><Table.Head>Completed</Table.Head><Table.Head>Payment</Table.Head><Table.Head>Total</Table.Head><Table.Head><span class="sr-only">Actions</span></Table.Head></Table.Row></Table.Header>
+        <Table.Body>{#each sales as sale (sale.id)}
+          <Table.Row class={sale.cancelledAt ? 'opacity-60' : undefined}>
+            <Table.Cell class="whitespace-normal"><div class="grid gap-1"><strong>{sale.invoiceNumber}</strong>{#if sale.cancelledAt}<span class="text-destructive text-xs">Cancelled: {sale.cancellationReason}</span>{/if}</div></Table.Cell>
+            <Table.Cell>{new Date(sale.completedAt).toLocaleString()}</Table.Cell><Table.Cell><Badge variant="secondary">{sale.paymentMethod}</Badge></Table.Cell><Table.Cell>{rupiah(sale.totalAmount)}</Table.Cell>
+            <Table.Cell><div class="flex gap-2"><Button variant="outline" size="sm" onclick={() => details(sale.id)}>Details</Button>{#if actor.role === 'admin' && !sale.cancelledAt}<Button variant="destructive" size="sm" onclick={() => openCancellation(sale)}>Cancel</Button>{/if}</div></Table.Cell>
+          </Table.Row>
+        {/each}</Table.Body>
+      </Table.Root>
+    </CardContent>
+  </Card>
 
-{#if selected}
-  <Card class="mt-4 max-w-2xl">
+  {#if selected}
+  <Card class="max-w-4xl">
     <CardHeader><CardTitle><h2>{selected.invoiceNumber}</h2></CardTitle></CardHeader>
     <CardContent class="grid gap-4">
       <p class="flex flex-wrap items-center gap-2"><Badge variant="secondary">{selected.paymentMethod}</Badge><strong>{rupiah(selected.totalAmount)}</strong></p>
@@ -109,7 +110,8 @@
       {#if selected.cancelledAt}<Alert variant="destructive">Cancelled: {selected.cancellationReason}</Alert>{/if}
     </CardContent>
   </Card>
-{/if}
+  {/if}
+</div>
 
 <Dialog.Root bind:open={cancellationDialogOpen}>
   <Dialog.Content showCloseButton={!cancelling}>
