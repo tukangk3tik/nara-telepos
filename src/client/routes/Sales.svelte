@@ -36,9 +36,19 @@
 
   async function details(id: number) {
     try {
+      error = ''
       selected = await api<SaleDetail>(`/api/sales/${id}`)
     } catch (cause) {
       error = cause instanceof Error ? cause.message : 'Could not load sale details'
+    }
+  }
+
+  function closeDetails(open: boolean) {
+    if (open) return
+    selected = null
+    if (saleId !== null) {
+      history.replaceState({}, '', '/sales')
+      dispatchEvent(new PopStateEvent('popstate'))
     }
   }
 
@@ -63,7 +73,7 @@
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ reason }),
       })
-      selected = null
+      closeDetails(false)
       cancellationDialogOpen = false
       saleToCancel = null
       await load()
@@ -98,20 +108,26 @@
     </CardContent>
   </Card>
 
-  {#if selected}
-  <Card class="max-w-4xl">
-    <CardHeader><CardTitle><h2>{selected.invoiceNumber}</h2></CardTitle></CardHeader>
-    <CardContent class="grid gap-4">
-      <p class="flex flex-wrap items-center gap-2"><Badge variant="secondary">{selected.paymentMethod}</Badge><strong>{rupiah(selected.totalAmount)}</strong></p>
-      <Table.Root>
-        <Table.Header><Table.Row><Table.Head>Product</Table.Head><Table.Head>SKU</Table.Head><Table.Head class="text-right">Quantity</Table.Head><Table.Head class="text-right">Total</Table.Head></Table.Row></Table.Header>
-        <Table.Body>{#each selected.items as item (item.id)}<Table.Row><Table.Cell class="font-medium whitespace-normal">{item.productName}</Table.Cell><Table.Cell>{item.sku}</Table.Cell><Table.Cell class="text-right">{item.quantity}</Table.Cell><Table.Cell class="text-right font-medium">{rupiah(item.lineTotal)}</Table.Cell></Table.Row>{/each}</Table.Body>
-      </Table.Root>
-      {#if selected.cancelledAt}{#key selected.id}<Alert variant="destructive">Cancelled: {selected.cancellationReason}</Alert>{/key}{/if}
-    </CardContent>
-  </Card>
-  {/if}
 </div>
+
+<Dialog.Root open={selected !== null} onOpenChange={closeDetails}>
+  <Dialog.Content class="top-0 right-0 left-auto h-dvh w-full max-w-full content-start overflow-y-auto rounded-none p-6 translate-x-0 translate-y-0 data-open:slide-in-from-right data-closed:slide-out-to-right data-open:zoom-in-100 data-closed:zoom-out-100 sm:max-w-xl">
+    {#if selected}
+      <Dialog.Header>
+        <Dialog.Title>{selected.invoiceNumber}</Dialog.Title>
+        <Dialog.Description>Completed {new Date(selected.completedAt).toLocaleString()}</Dialog.Description>
+      </Dialog.Header>
+      <div class="grid gap-4">
+        <p class="flex flex-wrap items-center gap-2"><Badge variant="secondary">{selected.paymentMethod}</Badge><strong>{rupiah(selected.totalAmount)}</strong></p>
+        <Table.Root>
+          <Table.Header><Table.Row><Table.Head>Product</Table.Head><Table.Head>SKU</Table.Head><Table.Head class="text-right">Quantity</Table.Head><Table.Head class="text-right">Total</Table.Head></Table.Row></Table.Header>
+          <Table.Body>{#each selected.items as item (item.id)}<Table.Row><Table.Cell class="font-medium whitespace-normal">{item.productName}</Table.Cell><Table.Cell>{item.sku}</Table.Cell><Table.Cell class="text-right">{item.quantity}</Table.Cell><Table.Cell class="text-right font-medium">{rupiah(item.lineTotal)}</Table.Cell></Table.Row>{/each}</Table.Body>
+        </Table.Root>
+        {#if selected.cancelledAt}<Alert variant="destructive">Cancelled: {selected.cancellationReason}</Alert>{/if}
+      </div>
+    {/if}
+  </Dialog.Content>
+</Dialog.Root>
 
 <Dialog.Root bind:open={cancellationDialogOpen}>
   <Dialog.Content showCloseButton={!cancelling}>

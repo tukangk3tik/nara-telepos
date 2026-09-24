@@ -10,8 +10,9 @@
   import { Label } from '$lib/components/ui/label/index.js'
   import * as Select from '$lib/components/ui/select/index.js'
   import * as Table from '$lib/components/ui/table/index.js'
-  import * as Tabs from '$lib/components/ui/tabs/index.js'
   import { Textarea } from '$lib/components/ui/textarea/index.js'
+
+  export let section: 'catalog' | 'team' | 'store' = 'catalog'
 
   type Product = { id: number; name: string; sku: string; barcode: string | null; salePrice: number; stockQuantity: number; isActive: boolean }
   type Customer = { id: number; name: string; phone: string | null; email: string | null }
@@ -197,14 +198,7 @@
   {#if message}<Alert variant="success" role="status" onClose={() => message = ''}>{message}</Alert>{/if}
   {#if error && !stockDialogOpen && !unlinkDialogOpen}<Alert variant="destructive" onClose={() => error = ''}>{error}</Alert>{/if}
 
-  <Tabs.Root value="catalog" class="gap-6">
-    <Tabs.List class="w-full justify-start sm:w-fit">
-      <Tabs.Trigger value="catalog">Catalog</Tabs.Trigger>
-      <Tabs.Trigger value="team">Team</Tabs.Trigger>
-      <Tabs.Trigger value="store">Store</Tabs.Trigger>
-    </Tabs.List>
-
-    <Tabs.Content value="catalog">
+  {#if section === 'catalog'}
       <div class="grid gap-6 xl:grid-cols-3">
         <Card>
           <CardHeader><CardTitle><h2>Products</h2></CardTitle></CardHeader>
@@ -238,9 +232,7 @@
           </CardContent>
         </Card>
       </div>
-    </Tabs.Content>
-
-    <Tabs.Content value="team">
+  {:else if section === 'team'}
       <div class="grid gap-6 xl:grid-cols-2">
         <Card>
           <CardHeader><CardTitle><h2>Users</h2></CardTitle></CardHeader>
@@ -259,15 +251,12 @@
           </CardContent>
         </Card>
       </div>
-    </Tabs.Content>
-
-    <Tabs.Content value="store">
+  {:else}
       <Card class="max-w-2xl">
         <CardHeader><CardTitle><h2>Store profile</h2></CardTitle></CardHeader>
         <CardContent><form onsubmit={saveProfile} class="grid gap-4"><div class="grid gap-2"><Label for="store-name">Store name</Label><Input id="store-name" bind:value={profile.storeName} required /></div><div class="grid gap-2"><Label for="receipt-footer">Receipt footer</Label><Textarea id="receipt-footer" bind:value={profile.receiptFooter} /></div><Button type="submit">Save profile</Button></form></CardContent>
       </Card>
-    </Tabs.Content>
-  </Tabs.Root>
+  {/if}
 </div>
 
 <Dialog.Root bind:open={stockDialogOpen} onOpenChange={setStockDialogOpen}>

@@ -13,24 +13,25 @@ test.each(['Pos', 'Expenses', 'Settings'])('%s configures string-valued selects 
 
 test('dashboard navigation and route are admin-only', () => {
   const source = readFileSync(new URL('../src/client/App.svelte', import.meta.url), 'utf8')
+  const sidebar = readFileSync(new URL('../src/client/components/AppSidebar.svelte', import.meta.url), 'utf8')
   expect(source).toContain("import Dashboard from './routes/Dashboard.svelte'")
-  expect(source.match(/Dashboard/g)?.length).toBeGreaterThanOrEqual(3)
   expect(source).toContain("actor.role === 'admin'")
   expect(source).toContain("path === '/dashboard'")
+  expect(sidebar).toContain("{ title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard, adminOnly: true }")
+  expect(sidebar).toContain("!item.adminOnly || role === 'admin'")
 })
 
 test('admins open on dashboard and see it as the first menu item', () => {
   const source = readFileSync(new URL('../src/client/App.svelte', import.meta.url), 'utf8')
+  const sidebar = readFileSync(new URL('../src/client/components/AppSidebar.svelte', import.meta.url), 'utf8')
   expect(source).toContain("if (path === '/') navigate(actor.role === 'admin' ? '/dashboard' : '/pos')")
-  const mobileNav = source.slice(source.indexOf('<nav aria-label="Main navigation" class="flex'), source.indexOf('</nav>', source.indexOf('<nav aria-label="Main navigation" class="flex')))
-  const desktopNav = source.slice(source.indexOf('<nav aria-label="Main navigation" class="grid'), source.indexOf('</nav>', source.indexOf('<nav aria-label="Main navigation" class="grid')))
-  expect(mobileNav.indexOf("path === '/dashboard'")).toBeLessThan(mobileNav.indexOf("path === '/pos'"))
-  expect(desktopNav.indexOf("path === '/dashboard'")).toBeLessThan(desktopNav.indexOf("path === '/pos'"))
+  expect(sidebar.indexOf("url: '/dashboard'")).toBeLessThan(sidebar.indexOf("url: '/pos'"))
 })
 
 test('authenticated shell uses theme tokens and a responsive content frame', () => {
   const source = readFileSync(new URL('../src/client/App.svelte', import.meta.url), 'utf8')
-  expect(source).toContain('bg-background text-foreground')
+  expect(source).toContain('<Sidebar.Provider>')
+  expect(source).toContain('<Sidebar.Inset class="min-w-0">')
   expect(source).toContain('max-w-7xl')
   expect(source).not.toContain('bg-slate-50')
 })
@@ -80,7 +81,7 @@ test('settings has a responsive administration workspace', () => {
 function settings(api: (path: string, options?: RequestInit) => Promise<unknown>) {
   const source = route('Settings')
   const script = parse(source).instance!.content.body
-    .filter((node) => node.type !== 'ImportDeclaration')
+    .filter((node) => node.type !== 'ImportDeclaration' && node.type !== 'ExportNamedDeclaration')
     .map((node) => source.slice(node.start, node.end)).join('\n')
   return new Function('api', 'onMount', 'stockAdjustment', `${new Bun.Transpiler({ loader: 'ts' }).transformSync(script)}
     return {
