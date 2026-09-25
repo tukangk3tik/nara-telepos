@@ -10,6 +10,7 @@
   import { Label } from '$lib/components/ui/label/index.js'
   import * as Select from '$lib/components/ui/select/index.js'
   import * as Table from '$lib/components/ui/table/index.js'
+  import * as Tabs from '$lib/components/ui/tabs/index.js'
   import { Textarea } from '$lib/components/ui/textarea/index.js'
 
   export let section: 'catalog' | 'team' | 'store' = 'catalog'
@@ -40,6 +41,11 @@
   let customerForm = newCustomer()
   let categoryForm = newCategory()
   let userForm = newUser()
+  let productDialogOpen = false
+  let customerDialogOpen = false
+  let categoryDialogOpen = false
+  let userDialogOpen = false
+  let telegramDialogOpen = false
   let telegramUserId = ''
   let linkedUserId = ''
   let stockToAdjust: Product | null = null
@@ -52,6 +58,24 @@
   let telegramChecking = false
   let error = ''
   let message = ''
+
+  function openProduct(product?: Product) {
+    error = ''
+    productForm = product ? { ...product, barcode: product.barcode ?? '' } : newProduct()
+    productDialogOpen = true
+  }
+
+  function openCustomer(customer?: Customer) {
+    error = ''
+    customerForm = customer ? { ...customer, phone: customer.phone ?? '', email: customer.email ?? '' } : newCustomer()
+    customerDialogOpen = true
+  }
+
+  function openCategory(category?: Category) {
+    error = ''
+    categoryForm = category ? { ...category } : newCategory()
+    categoryDialogOpen = true
+  }
 
   async function load() {
     try {
@@ -68,7 +92,7 @@
     event.preventDefault()
     try {
       await api<Product>(productForm.id ? `/api/products/${productForm.id}` : '/api/products', { method: productForm.id ? 'PUT' : 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(productForm) })
-      productForm = newProduct(); message = 'Product saved'; await load()
+      productDialogOpen = false; productForm = newProduct(); message = 'Product saved'; await load()
     } catch (cause) { error = cause instanceof Error ? cause.message : 'Could not save product' }
   }
 
@@ -112,7 +136,7 @@
     event.preventDefault()
     try {
       await api<Customer>(customerForm.id ? `/api/customers/${customerForm.id}` : '/api/customers', { method: customerForm.id ? 'PUT' : 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(customerForm) })
-      customerForm = newCustomer(); message = 'Customer saved'; await load()
+      customerDialogOpen = false; customerForm = newCustomer(); message = 'Customer saved'; await load()
     } catch (cause) { error = cause instanceof Error ? cause.message : 'Could not save customer' }
   }
 
@@ -120,7 +144,7 @@
     event.preventDefault()
     try {
       await api<Category>(categoryForm.id ? `/api/settings/expense-categories/${categoryForm.id}` : '/api/settings/expense-categories', { method: categoryForm.id ? 'PUT' : 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(categoryForm) })
-      categoryForm = newCategory(); message = 'Category saved'; await load()
+      categoryDialogOpen = false; categoryForm = newCategory(); message = 'Category saved'; await load()
     } catch (cause) { error = cause instanceof Error ? cause.message : 'Could not save category' }
   }
 
@@ -128,7 +152,7 @@
     event.preventDefault()
     try {
       await api<User>('/api/settings/users', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(userForm) })
-      userForm = newUser(); message = 'User saved'; await load()
+      userDialogOpen = false; userForm = newUser(); message = 'User saved'; await load()
     } catch (cause) { error = cause instanceof Error ? cause.message : 'Could not save user' }
   }
 
@@ -141,7 +165,7 @@
     event.preventDefault()
     try {
       await api<TelegramLink>('/api/settings/telegram-staff', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId: Number(linkedUserId), telegramUserId }) })
-      telegramUserId = ''; message = 'Telegram user linked'; await load()
+      telegramDialogOpen = false; telegramUserId = ''; linkedUserId = ''; message = 'Telegram user linked'; await load()
     } catch (cause) { error = cause instanceof Error ? cause.message : 'Could not link Telegram user' }
   }
 
@@ -194,70 +218,103 @@
 </script>
 
 <div class="grid gap-6">
-  <div><h1 class="text-3xl font-semibold tracking-tight">Settings</h1><p class="text-muted-foreground">Manage catalogue, staff, and store settings.</p></div>
+  <div><h1 class="text-3xl font-semibold tracking-tight">{section === 'catalog' ? 'Catalog' : section === 'team' ? 'Team' : 'Store'}</h1></div>
   {#if message}<Alert variant="success" role="status" onClose={() => message = ''}>{message}</Alert>{/if}
-  {#if error && !stockDialogOpen && !unlinkDialogOpen}<Alert variant="destructive" onClose={() => error = ''}>{error}</Alert>{/if}
+  {#if error && !productDialogOpen && !customerDialogOpen && !categoryDialogOpen && !userDialogOpen && !telegramDialogOpen && !stockDialogOpen && !unlinkDialogOpen}<Alert variant="destructive" onClose={() => error = ''}>{error}</Alert>{/if}
 
   {#if section === 'catalog'}
-      <div class="grid gap-6 xl:grid-cols-3">
+    <Tabs.Root value="products">
+      <Tabs.List variant="line" class="max-w-full overflow-x-auto">
+        <Tabs.Trigger value="products">Products</Tabs.Trigger>
+        <Tabs.Trigger value="customers">Customers</Tabs.Trigger>
+        <Tabs.Trigger value="categories">Expense categories</Tabs.Trigger>
+      </Tabs.List>
+      <Tabs.Content value="products">
         <Card>
-          <CardHeader><CardTitle><h2>Products</h2></CardTitle></CardHeader>
-          <CardContent class="grid gap-4">
-            <form onsubmit={saveProduct} class="grid gap-4">
-              <div class="grid gap-2"><Label for="product-name">Name</Label><Input id="product-name" bind:value={productForm.name} required /></div>
-              <div class="grid gap-2"><Label for="product-sku">SKU</Label><Input id="product-sku" bind:value={productForm.sku} required /></div>
-              <div class="grid gap-2"><Label for="product-barcode">Barcode</Label><Input id="product-barcode" bind:value={productForm.barcode} /></div>
-              <div class="grid gap-2"><Label for="product-price">Price (IDR)</Label><Input id="product-price" type="number" min="0" step="1" bind:value={productForm.salePrice} required /></div>
-              {#if productForm.id}<p class="text-muted-foreground text-sm">Use “Adjust stock” below; every change is audited.</p>{:else}<div class="grid gap-2"><Label for="product-stock">Opening stock</Label><Input id="product-stock" type="number" min="0" step="1" bind:value={productForm.stockQuantity} required /></div>{/if}
-              <Label class="flex items-center gap-2"><input type="checkbox" bind:checked={productForm.isActive} /> Active</Label>
-              <div class="flex flex-wrap gap-2"><Button type="submit">{productForm.id ? 'Update product' : 'Add product'}</Button>{#if productForm.id}<Button variant="outline" type="button" onclick={() => productForm = newProduct()}>New</Button>{/if}</div>
-            </form>
-            <Table.Root><Table.Header><Table.Row><Table.Head>Product</Table.Head><Table.Head>SKU</Table.Head><Table.Head class="text-right">Stock</Table.Head><Table.Head><span class="sr-only">Actions</span></Table.Head></Table.Row></Table.Header><Table.Body>{#each products as product (product.id)}<Table.Row><Table.Cell class="font-medium whitespace-normal">{product.name}</Table.Cell><Table.Cell>{product.sku}</Table.Cell><Table.Cell class="text-right">{product.stockQuantity}</Table.Cell><Table.Cell><div class="flex gap-2"><Button variant="outline" size="sm" onclick={() => productForm = { ...product, barcode: product.barcode ?? '' }}>Edit</Button><Button variant="outline" size="sm" onclick={() => openStockDialog(product)}>Adjust stock</Button></div></Table.Cell></Table.Row>{/each}</Table.Body></Table.Root>
-          </CardContent>
+          <CardHeader class="flex flex-row flex-wrap items-center justify-between gap-4"><CardTitle><h2>Products</h2></CardTitle><Button onclick={() => openProduct()}>New product</Button></CardHeader>
+          <CardContent><Table.Root>{#if !products.length}<Table.Caption>No data available</Table.Caption>{/if}<Table.Header><Table.Row><Table.Head>Product</Table.Head><Table.Head>SKU</Table.Head><Table.Head class="text-right">Price</Table.Head><Table.Head class="text-right">Stock</Table.Head><Table.Head>Status</Table.Head><Table.Head class="text-right"><span class="sr-only">Actions</span></Table.Head></Table.Row></Table.Header><Table.Body>{#each products as product (product.id)}<Table.Row><Table.Cell class="font-medium whitespace-normal">{product.name}</Table.Cell><Table.Cell>{product.sku}</Table.Cell><Table.Cell class="text-right">{new Intl.NumberFormat('id-ID').format(product.salePrice)}</Table.Cell><Table.Cell class="text-right">{product.stockQuantity}</Table.Cell><Table.Cell>{product.isActive ? 'Active' : 'Inactive'}</Table.Cell><Table.Cell><div class="flex justify-end gap-2"><Button variant="outline" size="sm" onclick={() => openProduct(product)}>Edit</Button><Button variant="outline" size="sm" onclick={() => openStockDialog(product)}>Adjust stock</Button></div></Table.Cell></Table.Row>{/each}</Table.Body></Table.Root></CardContent>
         </Card>
-
+      </Tabs.Content>
+      <Tabs.Content value="customers">
         <Card>
-          <CardHeader><CardTitle><h2>Customers</h2></CardTitle></CardHeader>
-          <CardContent class="grid gap-4">
-            <form onsubmit={saveCustomer} class="grid gap-4"><div class="grid gap-2"><Label for="customer-name">Name</Label><Input id="customer-name" bind:value={customerForm.name} required /></div><div class="grid gap-2"><Label for="customer-phone">Phone</Label><Input id="customer-phone" bind:value={customerForm.phone} /></div><div class="grid gap-2"><Label for="customer-email">Email</Label><Input id="customer-email" type="email" bind:value={customerForm.email} /></div><div class="flex flex-wrap gap-2"><Button type="submit">{customerForm.id ? 'Update customer' : 'Add customer'}</Button>{#if customerForm.id}<Button variant="outline" type="button" onclick={() => customerForm = newCustomer()}>New</Button>{/if}</div></form>
-            <Table.Root><Table.Header><Table.Row><Table.Head>Customer</Table.Head><Table.Head>Contact</Table.Head><Table.Head><span class="sr-only">Actions</span></Table.Head></Table.Row></Table.Header><Table.Body>{#each customers as customer (customer.id)}<Table.Row><Table.Cell class="font-medium whitespace-normal">{customer.name}</Table.Cell><Table.Cell class="whitespace-normal">{customer.phone ?? '—'}</Table.Cell><Table.Cell><Button variant="outline" size="sm" onclick={() => customerForm = { ...customer, phone: customer.phone ?? '', email: customer.email ?? '' }}>Edit</Button></Table.Cell></Table.Row>{/each}</Table.Body></Table.Root>
-          </CardContent>
+          <CardHeader class="flex flex-row flex-wrap items-center justify-between gap-4"><CardTitle><h2>Customers</h2></CardTitle><Button onclick={() => openCustomer()}>New customer</Button></CardHeader>
+          <CardContent><Table.Root>{#if !customers.length}<Table.Caption>No data available</Table.Caption>{/if}<Table.Header><Table.Row><Table.Head>Customer</Table.Head><Table.Head>Phone</Table.Head><Table.Head>Email</Table.Head><Table.Head class="text-right"><span class="sr-only">Actions</span></Table.Head></Table.Row></Table.Header><Table.Body>{#each customers as customer (customer.id)}<Table.Row><Table.Cell class="font-medium whitespace-normal">{customer.name}</Table.Cell><Table.Cell>{customer.phone ?? '—'}</Table.Cell><Table.Cell>{customer.email ?? '—'}</Table.Cell><Table.Cell class="text-right"><Button variant="outline" size="sm" onclick={() => openCustomer(customer)}>Edit</Button></Table.Cell></Table.Row>{/each}</Table.Body></Table.Root></CardContent>
         </Card>
-
+      </Tabs.Content>
+      <Tabs.Content value="categories">
         <Card>
-          <CardHeader><CardTitle><h2>Expense categories</h2></CardTitle></CardHeader>
-          <CardContent class="grid gap-4">
-            <form onsubmit={saveCategory} class="grid gap-4"><div class="grid gap-2"><Label for="category-name">Name</Label><Input id="category-name" bind:value={categoryForm.name} required /></div><Label class="flex items-center gap-2"><input type="checkbox" bind:checked={categoryForm.isActive} /> Active</Label><div class="flex flex-wrap gap-2"><Button type="submit">{categoryForm.id ? 'Update category' : 'Add category'}</Button>{#if categoryForm.id}<Button variant="outline" type="button" onclick={() => categoryForm = newCategory()}>New</Button>{/if}</div></form>
-            <Table.Root><Table.Header><Table.Row><Table.Head>Category</Table.Head><Table.Head>Status</Table.Head><Table.Head><span class="sr-only">Actions</span></Table.Head></Table.Row></Table.Header><Table.Body>{#each categories as category (category.id)}<Table.Row><Table.Cell class="font-medium whitespace-normal">{category.name}</Table.Cell><Table.Cell>{category.isActive ? 'Active' : 'Inactive'}</Table.Cell><Table.Cell><Button variant="outline" size="sm" onclick={() => categoryForm = { ...category }}>Edit</Button></Table.Cell></Table.Row>{/each}</Table.Body></Table.Root>
-          </CardContent>
+          <CardHeader class="flex flex-row flex-wrap items-center justify-between gap-4"><CardTitle><h2>Expense categories</h2></CardTitle><Button onclick={() => openCategory()}>New category</Button></CardHeader>
+          <CardContent><Table.Root>{#if !categories.length}<Table.Caption>No data available</Table.Caption>{/if}<Table.Header><Table.Row><Table.Head>Category</Table.Head><Table.Head>Status</Table.Head><Table.Head class="text-right"><span class="sr-only">Actions</span></Table.Head></Table.Row></Table.Header><Table.Body>{#each categories as category (category.id)}<Table.Row><Table.Cell class="font-medium whitespace-normal">{category.name}</Table.Cell><Table.Cell>{category.isActive ? 'Active' : 'Inactive'}</Table.Cell><Table.Cell class="text-right"><Button variant="outline" size="sm" onclick={() => openCategory(category)}>Edit</Button></Table.Cell></Table.Row>{/each}</Table.Body></Table.Root></CardContent>
         </Card>
-      </div>
+      </Tabs.Content>
+    </Tabs.Root>
   {:else if section === 'team'}
-      <div class="grid gap-6 xl:grid-cols-2">
+    <Tabs.Root value="users">
+      <Tabs.List variant="line" class="max-w-full overflow-x-auto"><Tabs.Trigger value="users">Users</Tabs.Trigger><Tabs.Trigger value="telegram">Telegram staff links</Tabs.Trigger></Tabs.List>
+      <Tabs.Content value="users">
         <Card>
-          <CardHeader><CardTitle><h2>Users</h2></CardTitle></CardHeader>
-          <CardContent class="grid gap-4">
-            <form onsubmit={saveUser} class="grid gap-4"><div class="grid gap-2"><Label for="user-name">Name</Label><Input id="user-name" bind:value={userForm.name} required /></div><div class="grid gap-2"><Label for="user-email">Email</Label><Input id="user-email" type="email" bind:value={userForm.email} required /></div><div class="grid gap-2"><Label for="user-password">Password</Label><Input id="user-password" type="password" bind:value={userForm.password} required /></div><div class="grid gap-2"><Label for="user-role">Role</Label><Select.Root type="single" bind:value={userForm.role} name="role"><Select.Trigger id="user-role" aria-label="Role" class="w-full"><Select.Value /></Select.Trigger><Select.Content><Select.Item value="cashier">Cashier</Select.Item><Select.Item value="admin">Admin</Select.Item></Select.Content></Select.Root></div><Button type="submit">Add user</Button></form>
-            <Table.Root><Table.Header><Table.Row><Table.Head>User</Table.Head><Table.Head>Email</Table.Head><Table.Head>Role</Table.Head></Table.Row></Table.Header><Table.Body>{#each users as user (user.id)}<Table.Row><Table.Cell class="font-medium whitespace-normal">{user.name}</Table.Cell><Table.Cell class="whitespace-normal">{user.email}</Table.Cell><Table.Cell><Select.Root type="single" value={user.role} onValueChange={(role) => setRole(user, role === 'admin' ? 'admin' : 'cashier')}><Select.Trigger aria-label={`Role for ${user.name}`}><Select.Value /></Select.Trigger><Select.Content><Select.Item value="cashier">Cashier</Select.Item><Select.Item value="admin">Admin</Select.Item></Select.Content></Select.Root></Table.Cell></Table.Row>{/each}</Table.Body></Table.Root>
-          </CardContent>
+          <CardHeader class="flex flex-row flex-wrap items-center justify-between gap-4"><CardTitle><h2>Users</h2></CardTitle><Button onclick={() => { error = ''; userForm = newUser(); userDialogOpen = true }}>New user</Button></CardHeader>
+          <CardContent><Table.Root>{#if !users.length}<Table.Caption>No data available</Table.Caption>{/if}<Table.Header><Table.Row><Table.Head>User</Table.Head><Table.Head>Email</Table.Head><Table.Head>Role</Table.Head></Table.Row></Table.Header><Table.Body>{#each users as user (user.id)}<Table.Row><Table.Cell class="font-medium whitespace-normal">{user.name}</Table.Cell><Table.Cell class="whitespace-normal">{user.email}</Table.Cell><Table.Cell><Select.Root type="single" value={user.role} onValueChange={(role) => setRole(user, role === 'admin' ? 'admin' : 'cashier')}><Select.Trigger aria-label={`Role for ${user.name}`}><Select.Value /></Select.Trigger><Select.Content><Select.Item value="cashier">Cashier</Select.Item><Select.Item value="admin">Admin</Select.Item></Select.Content></Select.Root></Table.Cell></Table.Row>{/each}</Table.Body></Table.Root></CardContent>
         </Card>
-
+      </Tabs.Content>
+      <Tabs.Content value="telegram">
         <Card>
-          <CardHeader><CardTitle><h2>Telegram staff links</h2></CardTitle></CardHeader>
-          <CardContent class="grid gap-4">
-            <Button variant="outline" disabled={telegramChecking} onclick={checkTelegram}>{telegramChecking ? 'Checking…' : 'Check connection'}</Button>
-            <form onsubmit={linkTelegram} class="grid gap-4"><div class="grid gap-2"><Label for="telegram-user">User</Label><Select.Root type="single" bind:value={linkedUserId} items={users.map((user) => ({ value: String(user.id), label: user.name }))} name="userId" required><Select.Trigger id="telegram-user" aria-label="User" class="w-full"><Select.Value placeholder="Select user" /></Select.Trigger><Select.Content>{#each users as user}<Select.Item value={String(user.id)} label={user.name} />{/each}</Select.Content></Select.Root></div><div class="grid gap-2"><Label for="telegram-user-id">Telegram user ID</Label><Input id="telegram-user-id" bind:value={telegramUserId} inputmode="numeric" required /></div><Button type="submit">Link Telegram user</Button></form>
-            <Table.Root><Table.Header><Table.Row><Table.Head>User</Table.Head><Table.Head>Telegram ID</Table.Head><Table.Head>Status</Table.Head><Table.Head><span class="sr-only">Actions</span></Table.Head></Table.Row></Table.Header><Table.Body>{#each telegramLinks as link (link.id)}<Table.Row><Table.Cell class="font-medium whitespace-normal">{link.name}</Table.Cell><Table.Cell>{link.telegramUserId}</Table.Cell><Table.Cell>{link.isActive ? 'Active' : 'Inactive'}</Table.Cell><Table.Cell><div class="flex gap-2"><Button variant="outline" size="sm" onclick={() => updateLink(link, !link.isActive)}>{link.isActive ? 'Deactivate' : 'Activate'}</Button><Button variant="destructive" size="sm" onclick={() => openUnlinkDialog(link)}>Unlink</Button></div></Table.Cell></Table.Row>{/each}</Table.Body></Table.Root>
-          </CardContent>
+          <CardHeader class="flex flex-row flex-wrap items-center justify-between gap-4"><CardTitle><h2>Telegram staff links</h2></CardTitle><div class="flex flex-wrap gap-2"><Button variant="outline" disabled={telegramChecking} onclick={checkTelegram}>{telegramChecking ? 'Checking…' : 'Check connection'}</Button><Button onclick={() => { error = ''; linkedUserId = ''; telegramUserId = ''; telegramDialogOpen = true }}>Link user</Button></div></CardHeader>
+          <CardContent><Table.Root>{#if !telegramLinks.length}<Table.Caption>No data available</Table.Caption>{/if}<Table.Header><Table.Row><Table.Head>User</Table.Head><Table.Head>Telegram ID</Table.Head><Table.Head>Status</Table.Head><Table.Head class="text-right"><span class="sr-only">Actions</span></Table.Head></Table.Row></Table.Header><Table.Body>{#each telegramLinks as link (link.id)}<Table.Row><Table.Cell class="font-medium whitespace-normal">{link.name}</Table.Cell><Table.Cell>{link.telegramUserId}</Table.Cell><Table.Cell>{link.isActive ? 'Active' : 'Inactive'}</Table.Cell><Table.Cell><div class="flex justify-end gap-2"><Button variant="outline" size="sm" onclick={() => updateLink(link, !link.isActive)}>{link.isActive ? 'Deactivate' : 'Activate'}</Button><Button variant="destructive" size="sm" onclick={() => openUnlinkDialog(link)}>Unlink</Button></div></Table.Cell></Table.Row>{/each}</Table.Body></Table.Root></CardContent>
         </Card>
-      </div>
+      </Tabs.Content>
+    </Tabs.Root>
   {:else}
-      <Card class="max-w-2xl">
-        <CardHeader><CardTitle><h2>Store profile</h2></CardTitle></CardHeader>
-        <CardContent><form onsubmit={saveProfile} class="grid gap-4"><div class="grid gap-2"><Label for="store-name">Store name</Label><Input id="store-name" bind:value={profile.storeName} required /></div><div class="grid gap-2"><Label for="receipt-footer">Receipt footer</Label><Textarea id="receipt-footer" bind:value={profile.receiptFooter} /></div><Button type="submit">Save profile</Button></form></CardContent>
-      </Card>
+    <Tabs.Root value="profile">
+      <Tabs.List variant="line"><Tabs.Trigger value="profile">Store profile</Tabs.Trigger></Tabs.List>
+      <Tabs.Content value="profile"><Card class="max-w-2xl"><CardHeader><CardTitle><h2>Store profile</h2></CardTitle></CardHeader><CardContent><form onsubmit={saveProfile} class="grid gap-4"><div class="grid gap-2"><Label for="store-name">Store name</Label><Input id="store-name" bind:value={profile.storeName} required /></div><div class="grid gap-2"><Label for="receipt-footer">Receipt footer</Label><Textarea id="receipt-footer" bind:value={profile.receiptFooter} /></div><Button type="submit">Save profile</Button></form></CardContent></Card></Tabs.Content>
+    </Tabs.Root>
   {/if}
 </div>
+
+<Dialog.Root bind:open={productDialogOpen}>
+  <Dialog.Content class="max-h-[calc(100vh-2rem)] overflow-y-auto">
+    <Dialog.Header><Dialog.Title>{productForm.id ? 'Edit product' : 'New product'}</Dialog.Title><Dialog.Description>Product details and opening stock.</Dialog.Description></Dialog.Header>
+    <form onsubmit={saveProduct} class="grid gap-4">
+      <div class="grid gap-2"><Label for="product-name">Name</Label><Input id="product-name" bind:value={productForm.name} required /></div>
+      <div class="grid gap-2"><Label for="product-sku">SKU</Label><Input id="product-sku" bind:value={productForm.sku} required /></div>
+      <div class="grid gap-2"><Label for="product-barcode">Barcode</Label><Input id="product-barcode" bind:value={productForm.barcode} /></div>
+      <div class="grid gap-2"><Label for="product-price">Price (IDR)</Label><Input id="product-price" type="number" min="0" step="1" bind:value={productForm.salePrice} required /></div>
+      {#if productForm.id}<p class="text-muted-foreground text-sm">Use “Adjust stock” in the table; every change is audited.</p>{:else}<div class="grid gap-2"><Label for="product-stock">Opening stock</Label><Input id="product-stock" type="number" min="0" step="1" bind:value={productForm.stockQuantity} required /></div>{/if}
+      <Label class="flex items-center gap-2"><input type="checkbox" bind:checked={productForm.isActive} /> Active</Label>
+      {#if error}<Alert variant="destructive" onClose={() => error = ''}>{error}</Alert>{/if}
+      <Dialog.Footer><Dialog.Close>{#snippet child({ props })}<Button variant="outline" type="button" {...props}>Cancel</Button>{/snippet}</Dialog.Close><Button type="submit">{productForm.id ? 'Update product' : 'Add product'}</Button></Dialog.Footer>
+    </form>
+  </Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={customerDialogOpen}>
+  <Dialog.Content>
+    <Dialog.Header><Dialog.Title>{customerForm.id ? 'Edit customer' : 'New customer'}</Dialog.Title><Dialog.Description>Customer contact details.</Dialog.Description></Dialog.Header>
+    <form onsubmit={saveCustomer} class="grid gap-4"><div class="grid gap-2"><Label for="customer-name">Name</Label><Input id="customer-name" bind:value={customerForm.name} required /></div><div class="grid gap-2"><Label for="customer-phone">Phone</Label><Input id="customer-phone" bind:value={customerForm.phone} /></div><div class="grid gap-2"><Label for="customer-email">Email</Label><Input id="customer-email" type="email" bind:value={customerForm.email} /></div>{#if error}<Alert variant="destructive" onClose={() => error = ''}>{error}</Alert>{/if}<Dialog.Footer><Dialog.Close>{#snippet child({ props })}<Button variant="outline" type="button" {...props}>Cancel</Button>{/snippet}</Dialog.Close><Button type="submit">{customerForm.id ? 'Update customer' : 'Add customer'}</Button></Dialog.Footer></form>
+  </Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={categoryDialogOpen}>
+  <Dialog.Content>
+    <Dialog.Header><Dialog.Title>{categoryForm.id ? 'Edit category' : 'New category'}</Dialog.Title><Dialog.Description>Expense category details.</Dialog.Description></Dialog.Header>
+    <form onsubmit={saveCategory} class="grid gap-4"><div class="grid gap-2"><Label for="category-name">Name</Label><Input id="category-name" bind:value={categoryForm.name} required /></div><Label class="flex items-center gap-2"><input type="checkbox" bind:checked={categoryForm.isActive} /> Active</Label>{#if error}<Alert variant="destructive" onClose={() => error = ''}>{error}</Alert>{/if}<Dialog.Footer><Dialog.Close>{#snippet child({ props })}<Button variant="outline" type="button" {...props}>Cancel</Button>{/snippet}</Dialog.Close><Button type="submit">{categoryForm.id ? 'Update category' : 'Add category'}</Button></Dialog.Footer></form>
+  </Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={userDialogOpen}>
+  <Dialog.Content>
+    <Dialog.Header><Dialog.Title>New user</Dialog.Title><Dialog.Description>Add a member of your team.</Dialog.Description></Dialog.Header>
+    <form onsubmit={saveUser} class="grid gap-4"><div class="grid gap-2"><Label for="user-name">Name</Label><Input id="user-name" bind:value={userForm.name} required /></div><div class="grid gap-2"><Label for="user-email">Email</Label><Input id="user-email" type="email" bind:value={userForm.email} required /></div><div class="grid gap-2"><Label for="user-password">Password</Label><Input id="user-password" type="password" bind:value={userForm.password} required /></div><div class="grid gap-2"><Label for="user-role">Role</Label><Select.Root type="single" bind:value={userForm.role} name="role"><Select.Trigger id="user-role" aria-label="Role" class="w-full"><Select.Value /></Select.Trigger><Select.Content><Select.Item value="cashier">Cashier</Select.Item><Select.Item value="admin">Admin</Select.Item></Select.Content></Select.Root></div>{#if error}<Alert variant="destructive" onClose={() => error = ''}>{error}</Alert>{/if}<Dialog.Footer><Dialog.Close>{#snippet child({ props })}<Button variant="outline" type="button" {...props}>Cancel</Button>{/snippet}</Dialog.Close><Button type="submit">Add user</Button></Dialog.Footer></form>
+  </Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={telegramDialogOpen}>
+  <Dialog.Content>
+    <Dialog.Header><Dialog.Title>Link Telegram user</Dialog.Title><Dialog.Description>Connect a team member to their Telegram account.</Dialog.Description></Dialog.Header>
+    <form onsubmit={linkTelegram} class="grid gap-4"><div class="grid gap-2"><Label for="telegram-user">User</Label><Select.Root type="single" bind:value={linkedUserId} items={users.map((user) => ({ value: String(user.id), label: user.name }))} name="userId" required><Select.Trigger id="telegram-user" aria-label="User" class="w-full"><Select.Value placeholder="Select user" /></Select.Trigger><Select.Content>{#each users as user}<Select.Item value={String(user.id)} label={user.name} />{/each}</Select.Content></Select.Root></div><div class="grid gap-2"><Label for="telegram-user-id">Telegram user ID</Label><Input id="telegram-user-id" bind:value={telegramUserId} inputmode="numeric" required /></div>{#if error}<Alert variant="destructive" onClose={() => error = ''}>{error}</Alert>{/if}<Dialog.Footer><Dialog.Close>{#snippet child({ props })}<Button variant="outline" type="button" {...props}>Cancel</Button>{/snippet}</Dialog.Close><Button type="submit">Link Telegram user</Button></Dialog.Footer></form>
+  </Dialog.Content>
+</Dialog.Root>
 
 <Dialog.Root bind:open={stockDialogOpen} onOpenChange={setStockDialogOpen}>
   <Dialog.Content>

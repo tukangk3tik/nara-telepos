@@ -72,9 +72,31 @@ test.each(['Sales', 'Expenses'])('%s has a history workspace header', (name) => 
 
 test('settings has a responsive administration workspace', () => {
   const source = route('Settings')
-  expect(source).toContain('Manage catalogue, staff, and store settings.')
-  expect(source).toContain('gap-6 xl:grid-cols-3')
-  expect(source).toContain('gap-6 xl:grid-cols-2')
+  expect(source).toContain("section === 'catalog' ? 'Catalog' : section === 'team' ? 'Team' : 'Store'")
+  expect(source).toContain('<Tabs.Trigger value="products">Products</Tabs.Trigger>')
+  expect(source).toContain('<Tabs.Trigger value="customers">Customers</Tabs.Trigger>')
+  expect(source).toContain('<Tabs.Trigger value="categories">Expense categories</Tabs.Trigger>')
+  expect(source).toContain('<Tabs.Trigger value="users">Users</Tabs.Trigger>')
+  expect(source).toContain('<Tabs.Trigger value="telegram">Telegram staff links</Tabs.Trigger>')
+  expect(source).toContain('<Tabs.Trigger value="profile">Store profile</Tabs.Trigger>')
+  expect(source).toContain('<Dialog.Title>{productForm.id ? \'Edit product\' : \'New product\'}</Dialog.Title>')
+  expect(source).toContain('<Dialog.Title>{customerForm.id ? \'Edit customer\' : \'New customer\'}</Dialog.Title>')
+  expect(source).toContain('<Dialog.Title>{categoryForm.id ? \'Edit category\' : \'New category\'}</Dialog.Title>')
+  expect(source).toContain('<Dialog.Title>New user</Dialog.Title>')
+  expect(source).toContain('<Dialog.Title>Link Telegram user</Dialog.Title>')
+})
+
+test('settings submenu names appear in the workspace header', () => {
+  const source = readFileSync(new URL('../src/client/App.svelte', import.meta.url), 'utf8')
+  expect(source).toContain("const settingsTitles: Record<string, string> = { catalog: 'Catalog', team: 'Team', store: 'Store' }")
+  expect(source).toContain("path.startsWith('/settings') ? (settingsTitles[path.split('/')[2]] ?? 'Catalog')")
+})
+
+test('empty settings tables show a no-data caption', () => {
+  const source = route('Settings')
+  for (const list of ['products', 'customers', 'categories', 'users', 'telegramLinks']) {
+    expect(source).toContain(`<Table.Root>{#if !${list}.length}<Table.Caption>No data available</Table.Caption>{/if}`)
+  }
 })
 
 // Exercise the real route handlers without mounting the UI; only the API boundary is replaced.

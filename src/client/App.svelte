@@ -16,7 +16,8 @@
   let actor: Actor | null = null
   let loading = true
   let path = window.location.pathname
-  $: pageTitle = path.startsWith('/sales') ? 'Sales' : path === '/expenses' ? 'Expenses' : path.startsWith('/settings') ? 'Settings' : path === '/dashboard' ? 'Dashboard' : 'POS'
+  const settingsTitles: Record<string, string> = { catalog: 'Catalog', team: 'Team', store: 'Store' }
+  $: pageTitle = path.startsWith('/sales') ? 'Sales' : path === '/expenses' ? 'Expenses' : path.startsWith('/settings') ? (settingsTitles[path.split('/')[2]] ?? 'Catalog') : path === '/dashboard' ? 'Dashboard' : 'POS'
 
   async function loadActor() {
     try {
