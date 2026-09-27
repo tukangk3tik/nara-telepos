@@ -60,7 +60,7 @@
             {#each items as item (item.url)}
               {#if !item.adminOnly || role === 'admin'}
                 <Sidebar.MenuItem>
-                  <Sidebar.MenuButton tooltipContent={item.title} isActive={path === item.url || (item.url === '/sales' && path.startsWith('/sales/'))}>
+                  <Sidebar.MenuButton tooltipContent={item.title} isActive={path === item.url || (item.url === '/sales' && path.startsWith('/sales/')) || (item.url === '/expenses' && path.startsWith('/expenses/'))}>
                     {#snippet child({ props })}
                       <a href={item.url} onclick={(event) => go(event, item.url)} {...props}>
                         <item.icon />
