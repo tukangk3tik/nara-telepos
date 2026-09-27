@@ -59,9 +59,76 @@ test('dashboard uses an overview grid and operations workspace', () => {
 
 test('POS keeps its checkout workspace responsive', () => {
   const source = route('Pos')
-  expect(source).toContain('xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,.65fr)]')
+  expect(source).toContain('xl:grid-cols-2')
   expect(source).toContain('Catalogue')
-  expect(source).toContain('Checkout')
+  expect(source).toContain('<h1 class="text-2xl font-semibold tracking-tight">New sale</h1>')
+  expect(source).toContain('<h2 class="text-2xl font-semibold tracking-tight">Checkout</h2>')
+  expect(source).not.toContain('Build the order, choose a customer, and take payment.')
+})
+
+test('Cart uses an accessible remove icon', () => {
+  const source = readFileSync(new URL('../src/client/components/Cart.svelte', import.meta.url), 'utf8')
+  expect(source).toContain("import Trash2 from '@lucide/svelte/icons/trash-2'")
+  expect(source).toContain('size="icon-sm" aria-label={`Remove ${item.name}`}')
+  expect(source).toContain('<Trash2 />')
+})
+
+test('Expenses filters its full-width table and paginates ten rows at a time', () => {
+  const source = route('Expenses')
+  expect(source).toContain('const pageSize = 10')
+  expect(source).toContain('expense.expenseNumber, expense.categoryName, expense.transactionDate, expense.notes ??')
+  expect(source).toContain('filteredExpenses.slice((page - 1) * pageSize, page * pageSize)')
+  expect(source).toContain('oninput={() => page = 1}')
+  expect(source).toContain('{#each pagedExpenses as expense (expense.id)}')
+  expect(source).toContain('<Table.Caption>No data available</Table.Caption>')
+  expect(source).toContain('>Previous</Button>')
+  expect(source).toContain('>Next</Button>')
+})
+
+test('Expenses creates records from a dialog', () => {
+  const source = route('Expenses')
+  expect(source).toContain('creationDialogOpen = true')
+  expect(source).toContain('>New expense</Button>')
+  expect(source).toContain('<Dialog.Root bind:open={creationDialogOpen}>')
+  expect(source).toContain('<Dialog.Title>New expense</Dialog.Title>')
+  expect(source.indexOf('<Dialog.Root bind:open={creationDialogOpen}>')).toBeLessThan(source.indexOf('<form class="grid gap-4" onsubmit={create}>'))
+  expect(source).toContain('creationDialogOpen = false')
+})
+
+test('deleted expenses has its own route and keeps Expenses active in the sidebar', () => {
+  const app = readFileSync(new URL('../src/client/App.svelte', import.meta.url), 'utf8')
+  const sidebar = readFileSync(new URL('../src/client/components/AppSidebar.svelte', import.meta.url), 'utf8')
+  expect(app).toContain("path === '/expenses' || path === '/expenses/deleted'")
+  expect(app).toContain("path === '/expenses/deleted' ? 'Deleted expenses' : 'Expenses'")
+  expect(app).toContain('<Expenses {actor} deleted={path === \'/expenses/deleted\'} {navigate} />')
+  expect(sidebar).toContain("item.url === '/expenses' && path.startsWith('/expenses/')")
+})
+
+test('Expenses separates active and deleted rows and puts Details in actions', () => {
+  const source = route('Expenses')
+  expect(source).toContain('Boolean(expense.deletedAt) === deleted')
+  expect(source).toContain('View deleted expenses</Button>')
+  expect(source).toContain('Back to expenses</Button>')
+  expect(source).toContain('<strong>{expense.expenseNumber}</strong>')
+  expect(source).toContain('<Button variant="outline" size="sm" onclick={() => details(expense.id)}>Details</Button>')
+  expect(source).toContain("{#if actor.role === 'admin' && !deleted}")
+})
+
+test('Expense Details opens in the right-side dialog used by Sales', () => {
+  const source = route('Expenses')
+  expect(source).toContain('<Dialog.Root open={selected !== null} onOpenChange={closeDetails}>')
+  expect(source).toContain('data-open:slide-in-from-right')
+  expect(source).toContain('<Dialog.Title>{selected.expenseNumber}</Dialog.Title>')
+  expect(source).not.toContain('{#if selected}<article')
+})
+
+test('Expenses navigation and inline search sit outside and inside the card respectively', () => {
+  const source = route('Expenses')
+  expect(source.indexOf('View deleted expenses</Button>')).toBeLessThan(source.indexOf('<Card>'))
+  expect(source.indexOf('Back to expenses</Button>')).toBeLessThan(source.indexOf('<Card>'))
+  expect(source).toContain('<CardHeader class="flex flex-row flex-wrap items-center justify-between gap-4">')
+  expect(source).toContain('<div class="flex flex-wrap items-center gap-3"><Label for="expense-search">Search expenses</Label><Input id="expense-search"')
+  expect(source).not.toContain('<CardTitle>')
 })
 
 test.each(['Sales', 'Expenses'])('%s has a history workspace header', (name) => {

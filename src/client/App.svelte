@@ -17,7 +17,7 @@
   let loading = true
   let path = window.location.pathname
   const settingsTitles: Record<string, string> = { catalog: 'Catalog', team: 'Team', store: 'Store' }
-  $: pageTitle = path.startsWith('/sales') ? 'Sales' : path === '/expenses' ? 'Expenses' : path.startsWith('/settings') ? (settingsTitles[path.split('/')[2]] ?? 'Catalog') : path === '/dashboard' ? 'Dashboard' : 'POS'
+  $: pageTitle = path.startsWith('/sales') ? 'Sales' : (path === '/expenses' || path === '/expenses/deleted') ? (path === '/expenses/deleted' ? 'Deleted expenses' : 'Expenses') : path.startsWith('/settings') ? (settingsTitles[path.split('/')[2]] ?? 'Catalog') : path === '/dashboard' ? 'Dashboard' : 'POS'
 
   async function loadActor() {
     try {
@@ -67,8 +67,8 @@
       <div class="mx-auto w-full max-w-7xl min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
         {#if path === '/sales' || /^\/sales\/[1-9]\d*$/.test(path)}
           {#key path}<Sales {actor} saleId={path === '/sales' ? null : Number(path.split('/')[2])} />{/key}
-        {:else if path === '/expenses'}
-          <Expenses {actor} />
+        {:else if path === '/expenses' || path === '/expenses/deleted'}
+          {#key path}<Expenses {actor} deleted={path === '/expenses/deleted'} {navigate} />{/key}
         {:else if (path === '/settings' || /^\/settings\/(catalog|team|store)$/.test(path)) && actor.role === 'admin'}
           <Settings section={path.split('/')[2] === 'team' ? 'team' : path.split('/')[2] === 'store' ? 'store' : 'catalog'} />
         {:else if path === '/dashboard' && actor.role === 'admin'}
